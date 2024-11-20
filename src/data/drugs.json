@@ -1,0 +1,18 @@
+[
+  {
+    "id": "1",
+    "name": "Ksalol",
+    "category": "Benzo",
+    "dosage": "1mg",
+    "dosageUnit": "mg",
+    "description": "Alprazolam (also known as Xanax) is a depressant substance of the benzodiazepine class. Its characteristic effects include anxiety suppression, sedation, disinhibition, and muscle relaxation.",
+    "instructions": "Threshold: 0.1 - 0.25mg,\nCommon: 0.5 - 1.5mg,\nHeavy: 2mg+",
+    "warnings": "Do not exceed 6 tablets in 24 hours",
+    "settings": {
+      "defaultDosage": "1",
+      "defaultDosageUnit": "mg",
+      "minTimeBetweenDoses": 4,
+      "maxDailyDoses": 6
+    }
+  }
+]
