@@ -7,8 +7,10 @@ const MobileLayout = ({ children }) => {
     <div className="flex flex-col min-h-screen bg-gray-50">
       {/* Main Content Area */}
       <main className="flex-1 pt-16 pb-16 lg:pt-0 lg:pb-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
-          {children}
+        <div className="pt-16 pb-24 lg:pt-0 lg:pb-0">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-8">
+            {children}
+          </div>
         </div>
       </main>
 

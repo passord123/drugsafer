@@ -676,20 +676,20 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
             </div>
           </div>
         )}
-    </div>
-
-      {/* Warning System */ }
-  {
-    drug.warnings && (
-      <div className="mt-6">
-        <WarningSystem
-          medication={drug}
-          lastDose={drug.doses?.[0]}
-          dailyDoses={getTodaysDoses()}
-        />
       </div>
-    )
-  }
+
+      {/* Warning System */}
+      {
+        drug.warnings && (
+          <div className="mt-6">
+            <WarningSystem
+              medication={drug}
+              lastDose={drug.doses?.[0]}
+              dailyDoses={getTodaysDoses()}
+            />
+          </div>
+        )
+      }
     </div >
   );
 };
