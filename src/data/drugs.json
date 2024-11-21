@@ -6,8 +6,8 @@
     "dosage": "1mg",
     "dosageUnit": "mg",
     "description": "Alprazolam is a depressant substance of the benzodiazepine class. Its characteristic effects include anxiety suppression, sedation, disinhibition, and muscle relaxation.",
-    "instructions": "Threshold: 0.1 - 0.25mg,\nCommon: 0.5 - 1.5mg,\nHeavy: 2mg+",
-    "warnings": "Do not exceed 6 tablets in 24 hours",
+    "instructions": "Light: 0.1 - 0.25mg\nCommon: 0.5 - 1.5mg\nHeavy: 2mg+",
+    "warnings": "Try to avoid alcohol. It is advised to never combine with GHB or opiods.",
     "settings": {
       "defaultDosage": "1",
       "defaultDosageUnit": "mg",
@@ -19,16 +19,16 @@
     "id": "2",
     "name": "Valium",
     "category": "Benzo",
-    "dosage": "1mg",
+    "dosage": "10mg",
     "dosageUnit": "mg",
-    "description": "Alprazolam is a depressant substance of the benzodiazepine class. Its characteristic effects include anxiety suppression, sedation, disinhibition, and muscle relaxation.",
-    "instructions": "Threshold: 0.1 - 0.25mg,\nCommon: 0.5 - 1.5mg,\nHeavy: 2mg+",
-    "warnings": "Do not exceed 6 tablets in 24 hours",
+    "description": "Diazepam (also known as Valium) is a depressant substance of the benzodiazepine class. Its mechanism of action is to increase the effects of the inhibitory neurotransmitter GABA.",
+    "instructions": "Light: 1 - 2.5mg\nCommon: 5 - 15mg\nHeavy: 30mg+",
+    "warnings": "Try to avoid alcohol. It is advised to never combine with GHB or opiods.",
     "settings": {
-      "defaultDosage": "1",
+      "defaultDosage": "10",
       "defaultDosageUnit": "mg",
-      "minTimeBetweenDoses": 4,
-      "maxDailyDoses": 6
+      "minTimeBetweenDoses": 6,
+      "maxDailyDoses": 4
     }
   },
   {
@@ -37,27 +37,27 @@
     "category": "Benzo",
     "dosage": "1mg",
     "dosageUnit": "mg",
-    "description": "Alprazolam is a depressant substance of the benzodiazepine class. Its characteristic effects include anxiety suppression, sedation, disinhibition, and muscle relaxation.",
-    "instructions": "Threshold: 0.1 - 0.25mg,\nCommon: 0.5 - 1.5mg,\nHeavy: 2mg+",
-    "warnings": "Do not exceed 6 tablets in 24 hours",
+    "description": "Clonazepam (trade name Klonopin or Rivotril) is a long-acting psychoactive substance of the benzodiazepine class which produces mainly anxiolytic, but also anticonvulsant, muscle relaxant, amnesic, sedative, depressant and hypnotic effects.",
+    "instructions": "Light: 0.1 - 0.25mg\nCommon: 0.5 - 1mg\nHeavy: 2mg+",
+    "warnings": "Try to avoid alcohol. It is advised to never combine with GHB or opiods.",
     "settings": {
       "defaultDosage": "1",
       "defaultDosageUnit": "mg",
-      "minTimeBetweenDoses": 4,
-      "maxDailyDoses": 6
+      "minTimeBetweenDoses": 8,
+      "maxDailyDoses": 3
     }
   },
   {
     "id": "4",
     "name": "Sobril",
     "category": "Benzo",
-    "dosage": "1mg",
+    "dosage": "45mg",
     "dosageUnit": "mg",
-    "description": "Alprazolam is a depressant substance of the benzodiazepine class. Its characteristic effects include anxiety suppression, sedation, disinhibition, and muscle relaxation.",
-    "instructions": "Threshold: 0.1 - 0.25mg,\nCommon: 0.5 - 1.5mg,\nHeavy: 2mg+",
-    "warnings": "Do not exceed 6 tablets in 24 hours",
+    "description": "Oxazepam is a short-to-intermediate-acting benzodiazepine. Oxazepam is used for the treatment of anxiety, insomnia, and to control symptoms of alcohol withdrawal syndrome. ",
+    "instructions": "Common: 45mg+",
+    "warnings": "Try to avoid alcohol. It is advised to never combine with GHB or opiods.",
     "settings": {
-      "defaultDosage": "1",
+      "defaultDosage": "45",
       "defaultDosageUnit": "mg",
       "minTimeBetweenDoses": 4,
       "maxDailyDoses": 6
