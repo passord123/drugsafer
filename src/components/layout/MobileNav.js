@@ -16,7 +16,7 @@ const MobileNav = () => {
   return (
     <>
       {/* Mobile Header */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b z-50 px-4 flex items-center justify-between lg:hidden">
+      <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b z-40 px-4 flex items-center justify-between lg:hidden">
         <Link to="/" className="flex items-center space-x-2">
           <AlertTriangle className="h-6 w-6 text-blue-500" />
           <span className="text-lg font-bold text-gray-900">DrugSafe</span>
@@ -30,8 +30,7 @@ const MobileNav = () => {
       </header>
 
       {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t z-50">
-      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-50 lg:hidden">
+      <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-40 lg:hidden">
         <div className="grid grid-cols-4 h-16">
           {links.map(({ to, icon: Icon, label }) => (
             <Link
@@ -47,12 +46,10 @@ const MobileNav = () => {
           ))}
         </div>
       </nav>
-      </div>
-
 
       {/* Mobile Menu Overlay */}
       {isOpen && (
-      <div className="fixed inset-0 z-[55] bg-white pt-16">
+        <div className="fixed inset-0 z-[45] bg-white pt-16">
           <div className="p-4 space-y-4">
             {links.map(({ to, icon: Icon, label }) => (
               <Link

@@ -1,4 +1,3 @@
-// src/components/DrugModal.js
 import React, { useState } from 'react';
 
 const DrugModal = ({ drug, onClose, onAdd }) => {
@@ -28,7 +27,7 @@ const DrugModal = ({ drug, onClose, onAdd }) => {
   if (!drug) return null;
 
   return (
-    <div className="modal-overlay">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100]">
       <div className="modal-content drug-modal">
         <h2 className="text-2xl font-bold text-gray-900 mb-6">{drug.name}</h2>
         
