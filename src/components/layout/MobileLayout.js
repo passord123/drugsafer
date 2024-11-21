@@ -20,7 +20,7 @@ const MobileLayout = ({ children }) => {
       </nav>
 
       {/* Mobile Navigation */}
-      {/* <MobileNav /> */}
+      <MobileNav />
 
       {/* Footer */}
       {/* <footer className="hidden lg:flex bg-white border-t h-16">
