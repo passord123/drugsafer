@@ -303,7 +303,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-6 space-y-6 relative pb-32 sm:pb-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -410,8 +410,8 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
 
       {/* Record/Edit Dose Form */}
       {isEditingDose && (
-        <div className="fixed inset-x-0 bottom-0 bg-white border-t p-4 md:relative md:border-0 md:bg-transparent md:p-0">
-          <div className="flex flex-col gap-4 max-w-lg mx-auto">
+        <div className="fixed inset-x-0 bottom-0 bg-white border-t p-4 z-50 sm:relative sm:border-0 sm:bg-transparent sm:p-0 sm:z-auto">
+          <div className="max-w-lg mx-auto flex flex-col gap-4">
             <div className="flex gap-2">
               <input
                 type="number"
@@ -471,16 +471,18 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
         </div>
       )}
 
-      {/* Record New Dose Button */}
+      {/* Record New Dose Button - Updated positioning */}
       {!isEditingDose && (
-        <button
-          onClick={() => setIsEditingDose(true)}
-          className="w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 
-                   bg-blue-500 hover:bg-blue-600 text-white transition-colors"
-        >
-          <PlusCircle className="w-5 h-5" />
-          <span>Record New Dose</span>
-        </button>
+        <div className="fixed inset-x-0 bottom-0 p-4 bg-white border-t sm:relative sm:border-0 sm:p-0 sm:bg-transparent">
+          <button
+            onClick={() => setIsEditingDose(true)}
+            className="w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 
+                     bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+          >
+            <PlusCircle className="w-5 h-5" />
+            <span>Record New Dose</span>
+          </button>
+        </div>
       )}
 
       {/* Settings Modal */}
