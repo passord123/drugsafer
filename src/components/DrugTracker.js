@@ -299,324 +299,358 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
   };
 
   return (
-    <div className="p-6 pb-24 md:pb-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">{drug.name}</h2>
-          <p className="text-sm text-gray-500">
-            Standard dose: {typeof drug.settings?.defaultDosage === 'object'
-              ? `${drug.settings.defaultDosage.amount} ${drug.settings.defaultDosage.unit}`
-              : `${standardDoseAmount} ${standardDoseUnit}`}
-          </p>
+    <div className="relative min-h-screen bg-white">
+      <div className="p-4 sm:p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">{drug.name}</h2>
+            <p className="text-sm text-gray-500">
+              Standard dose: {typeof drug.settings?.defaultDosage === 'object'
+                ? `${drug.settings.defaultDosage.amount} ${drug.settings.defaultDosage.unit}`
+                : `${standardDoseAmount} ${standardDoseUnit}`
+              }
+            </p>
+          </div>
+          <button
+            onClick={() => setShowSettings(true)}
+            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+          >
+            <Settings className="w-5 h-5 text-gray-600" />
+          </button>
         </div>
-        <button
-          onClick={() => setShowSettings(true)}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-        >
-          <Settings className="w-5 h-5 text-gray-600" />
-        </button>
-      </div>
 
-      {/* Status Cards */}
-      {(shouldShowDoseStatus() || shouldShowSupplyManagement()) && (
-        <div className={`grid ${getGridClass()} gap-4`}>
-          {/* Dose Status */}
-          {shouldShowDoseStatus() && (
-            <div className="bg-white rounded-lg border p-4">
-              <div className="flex items-center gap-2 mb-4">
-                <Clock className="w-5 h-5 text-blue-500" />
-                <h3 className="font-semibold text-gray-900">Dose Status</h3>
-              </div>
-              <div className="space-y-2">
-                {features.dailyLimits && (
-                  <p className="text-sm text-gray-600">
-                    Today: {getTodaysDoses()} of {maxDailyDoses} doses taken
-                  </p>
-                )}
-                {features.timingRestrictions && (
-                  <p className="text-sm text-gray-600">
-                    {getTimeUntilNextDose() || 'No doses recorded'}
-                  </p>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* Supply Status */}
-          {shouldShowSupplyManagement() && (
-            <SupplyTracker
-              currentSupply={Number(drug.settings?.currentSupply || 0)}
-              unit={drug.settings?.defaultDosageUnit || 'doses'}
-            />
-          )}
-        </div>
-      )}
-
-      {/* Recent Doses */}
-      <div className="bg-white rounded-lg border">
-        <div className="p-4 border-b">
-          <h3 className="font-semibold text-gray-900">Recent Doses</h3>
-        </div>
-        <div className="divide-y max-h-[300px] overflow-y-auto">
-          {drug.doses?.length > 0 ? (
-            drug.doses.map((dose) => (
-              <div key={dose.id} className="p-4 hover:bg-gray-50">
-                <div className="flex justify-between items-center">
-                  <div>
-                    <p className="font-medium text-gray-900">{dose.dosage}</p>
-                    <p className="text-sm text-gray-500">
-                      {new Date(dose.timestamp).toLocaleString()}
-                      {dose.edited && (
-                        <span className="ml-2 text-blue-500">(edited)</span>
-                      )}
+        {/* Status Cards */}
+        {(shouldShowDoseStatus() || shouldShowSupplyManagement()) && (
+          <div className={`grid ${getGridClass()} gap-4`}>
+            {/* Dose Status */}
+            {shouldShowDoseStatus() && (
+              <div className="bg-white rounded-lg border p-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <Clock className="w-5 h-5 text-blue-500" />
+                  <h3 className="font-semibold text-gray-900">Dose Status</h3>
+                </div>
+                <div className="space-y-2">
+                  {features.dailyLimits && (
+                    <p className="text-sm text-gray-600">
+                      Today: {getTodaysDoses()} of {maxDailyDoses} doses taken
                     </p>
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => handleEditDose(dose)}
-                      className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-colors"
-                    >
-                      <Pencil className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteDose(dose.id)}
-                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                    {features.timingRestrictions && dose.status !== 'normal' && (
-                      <AlertCircle
-                        className={`w-5 h-5 ${dose.status === 'early' ? 'text-red-500' : 'text-yellow-500'
-                          }`}
-                      />
-                    )}
-                  </div>
+                  )}
+                  {features.timingRestrictions && (
+                    <p className="text-sm text-gray-600">
+                      {getTimeUntilNextDose() || 'No doses recorded'}
+                    </p>
+                  )}
                 </div>
               </div>
-            ))
-          ) : (
-            <div className="p-8 text-center text-gray-500">
-              No doses recorded yet
-            </div>
-          )}
-        </div>
-      </div>
+            )}
 
-      {/* Record/Edit Dose Form */}
-      {isEditingDose && (
-        <div className="fixed inset-x-0 bottom-0 bg-white border-t p-4 z-40">
-          <div className="max-w-lg mx-auto space-y-4">
-            <div className="flex gap-2">
-              <input
-                type="number"
-                value={customDosage}
-                onChange={(e) => setCustomDosage(e.target.value)}
-                className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter dosage"
+            {/* Supply Status - Fixed import path */}
+            {shouldShowSupplyManagement() && (
+              <SupplyTracker
+                currentSupply={Number(drug.settings?.currentSupply || 0)}
+                unit={drug.settings?.defaultDosage?.unit || drug.settings?.defaultDosageUnit || 'doses'}
               />
-              <select
-                value={dosageUnit}
-                onChange={(e) => setDosageUnit(e.target.value)}
-                className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="mg">mg</option>
-                <option value="ml">ml</option>
-                <option value="g">g</option>
-                <option value="tablets">tablets</option>
-              </select>
-            </div>
-
-            <div className="flex gap-2">
-              <input
-                type="date"
-                value={doseDate}
-                onChange={(e) => setDoseDate(e.target.value)}
-                className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-              <input
-                type="time"
-                value={doseTime}
-                onChange={(e) => setDoseTime(e.target.value)}
-                className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <div className="flex gap-2">
-              <button
-                onClick={editingDoseId ? handleUpdateDose : handleRecordDose}
-                className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-              >
-                {editingDoseId ? 'Update Dose' : 'Record Dose'}
-              </button>
-              <button
-                onClick={() => {
-                  setIsEditingDose(false);
-                  setEditingDoseId(null);
-                  setCustomDosage('');
-                  setDoseDate('');
-                  setDoseTime('');
-                }}
-                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-            </div>
+            )}
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Record New Dose Button */}
-      {!isEditingDose && (
-        <div className="fixed inset-x-0 bottom-0 p-4 bg-white border-t z-40">
-          <div className="max-w-lg mx-auto">
+        {/* Recent Doses */}
+        <div className="bg-white rounded-lg border">
+          <div className="p-4 border-b flex justify-between items-center">
+            <h3 className="font-semibold text-gray-900">Recent Doses</h3>
             <button
               onClick={() => setIsEditingDose(true)}
-              className="w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 
-                       bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+              className="flex items-center gap-2 text-blue-500 hover:text-blue-600"
             >
-              <PlusCircle className="w-5 h-5" />
-              <span>Record New Dose</span>
+              <PlusCircle className="w-4 h-4" />
+              <span className="text-sm font-medium">Add Dose</span>
             </button>
           </div>
+          <div className="divide-y max-h-[300px] overflow-y-auto">
+            {drug.doses?.length > 0 ? (
+              drug.doses.map((dose) => (
+                <div key={dose.id} className="p-4 hover:bg-gray-50">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="font-medium text-gray-900">{dose.dosage}</p>
+                      <p className="text-sm text-gray-500">
+                        {new Date(dose.timestamp).toLocaleString()}
+                        {dose.edited && (
+                          <span className="ml-2 text-blue-500">(edited)</span>
+                        )}
+                      </p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => handleEditDose(dose)}
+                        className="p-2 text-gray-400 hover:text-blue-500 hover:bg-blue-50 rounded-full transition-colors"
+                      >
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteDose(dose.id)}
+                        className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-full transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      {features.timingRestrictions && dose.status !== 'normal' && (
+                        <AlertCircle
+                          className={`w-5 h-5 ${dose.status === 'early' ? 'text-red-500' : 'text-yellow-500'
+                            }`}
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              <div className="p-8 text-center text-gray-500">
+                No doses recorded yet
+              </div>
+            )}
+          </div>
         </div>
-      )}
 
-      {/* Settings Dialog */}
-      {showSettings && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
-              <h3 className="text-xl font-bold text-gray-900">Drug Settings</h3>
-              <button
-                onClick={() => setShowSettings(false)}
-                className="p-2 hover:bg-gray-100 rounded-full"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
+        {/* Record/Edit Dose Modal */}
+        {isEditingDose && (
+          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
+            <div className="bg-white w-full sm:rounded-lg sm:max-w-lg max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+                <h3 className="text-lg font-semibold">
+                  {editingDoseId ? 'Edit Dose' : 'Record New Dose'}
+                </h3>
+                <button
+                  onClick={() => {
+                    setIsEditingDose(false);
+                    setEditingDoseId(null);
+                    setCustomDosage('');
+                    setDoseDate('');
+                    setDoseTime('');
+                  }}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-            <div className="p-4 space-y-6">
-              {/* Standard Dose Setting */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Standard Dose
-                </label>
-                <div className="flex gap-2">
-                  <input
-                    type="number"
-                    value={standardDoseAmount}
-                    onChange={(e) => setStandardDoseAmount(e.target.value)}
-                    className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="Amount"
-                    min="0"
-                    step="any"
-                  />
-                  <select
-                    value={standardDoseUnit}
-                    onChange={(e) => setStandardDoseUnit(e.target.value)}
-                    className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  >
-                    <option value="mg">mg</option>
-                    <option value="ml">ml</option>
-                    <option value="g">g</option>
-                    <option value="tablets">tablets</option>
-                  </select>
+              <div className="p-4 space-y-4">
+                <div className="space-y-4">
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Amount
+                      </label>
+                      <input
+                        type="number"
+                        value={customDosage}
+                        onChange={(e) => setCustomDosage(e.target.value)}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="Enter dosage"
+                      />
+                    </div>
+                    <div className="w-1/3">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Unit
+                      </label>
+                      <select
+                        value={dosageUnit}
+                        onChange={(e) => setDosageUnit(e.target.value)}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="mg">mg</option>
+                        <option value="ml">ml</option>
+                        <option value="g">g</option>
+                        <option value="tablets">tablets</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2">
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Date
+                      </label>
+                      <input
+                        type="date"
+                        value={doseDate}
+                        onChange={(e) => setDoseDate(e.target.value)}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Time
+                      </label>
+                      <input
+                        type="time"
+                        value={doseTime}
+                        onChange={(e) => setDoseTime(e.target.value)}
+                        className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 
-              {/* Settings Fields */}
-              <SettingField
-                label="Daily Dose Limits"
-                checked={features.dailyLimits}
-                onToggle={(checked) => setFeatures(prev => ({
-                  ...prev,
-                  dailyLimits: checked
-                }))}
-              >
-                <input
-                  type="number"
-                  value={maxDailyDoses}
-                  onChange={(e) => setMaxDailyDoses(Number(e.target.value))}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  min="1"
-                  placeholder="Maximum doses per day"
-                />
-              </SettingField>
-
-              <SettingField
-                label="Timing Restrictions"
-                checked={features.timingRestrictions}
-                onToggle={(checked) => setFeatures(prev => ({
-                  ...prev,
-                  timingRestrictions: checked
-                }))}
-              >
-                <input
-                  type="number"
-                  value={waitingPeriod}
-                  onChange={(e) => setWaitingPeriod(Number(e.target.value))}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  min="0"
-                  step="0.5"
-                  placeholder="Hours between doses"
-                />
-              </SettingField>
-
-              <SettingField
-                label="Supply Management"
-                checked={features.supplyManagement}
-                onToggle={(checked) => setFeatures(prev => ({
-                  ...prev,
-                  supplyManagement: checked
-                }))}
-              >
-                <input
-                  type="number"
-                  value={supplyAmount}
-                  onChange={(e) => setSupplyAmount(Number(e.target.value))}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  min="0"
-                  placeholder="Current supply amount"
-                />
-              </SettingField>
-
-              {/* Warning information */}
-              {drug.warnings && (
-                <div className="bg-red-50 p-4 rounded-lg">
-                  <div className="flex items-center space-x-2">
-                    <AlertCircle className="w-5 h-5 text-red-500" />
-                    <label className="text-sm font-medium text-red-700">
-                      Important Safety Information
-                    </label>
-                  </div>
-                  <p className="text-red-700 mt-1">{drug.warnings}</p>
-                </div>
-              )}
-            </div>
-
-            <div className="sticky bottom-0 bg-white border-t p-4 flex gap-3">
-              <button
-                onClick={handleUpdateSettings}
-                className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-              >
-                Save Changes
-              </button>
-              <button
-                onClick={() => setShowSettings(false)}
-                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
-              >
-                Cancel
-              </button>
+              <div className="sticky bottom-0 bg-white border-t p-4 flex gap-3">
+                <button
+                  onClick={editingDoseId ? handleUpdateDose : handleRecordDose}
+                  className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+                >
+                  {editingDoseId ? 'Update Dose' : 'Record Dose'}
+                </button>
+                <button
+                  onClick={() => {
+                    setIsEditingDose(false);
+                    setEditingDoseId(null);
+                    setCustomDosage('');
+                    setDoseDate('');
+                    setDoseTime('');
+                  }}
+                  className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Delete Confirmation Dialog */}
-      {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg w-full max-w-sm p-6">
+        {/* Settings Dialog */}
+        {showSettings && (
+          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
+            <div className="bg-white w-full sm:rounded-lg sm:max-w-lg max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
+                <h3 className="text-lg font-semibold">Drug Settings</h3>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <div className="p-4 space-y-6">
+                {/* Standard Dose Setting */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Standard Dose
+                  </label>
+                  <div className="flex gap-2">
+                    <input
+                      type="number"
+                      value={standardDoseAmount}
+                      onChange={(e) => setStandardDoseAmount(e.target.value)}
+                      className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                      placeholder="Amount"
+                      min="0"
+                      step="any"
+                    />
+                    <select
+                      value={standardDoseUnit}
+                      onChange={(e) => setStandardDoseUnit(e.target.value)}
+                      className="px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    >
+                      <option value="mg">mg</option>
+                      <option value="ml">ml</option>
+                      <option value="g">g</option>
+                      <option value="tablets">tablets</option>
+                    </select>
+                  </div>
+                </div>
+
+                <SettingField
+                  label="Daily Dose Limits"
+                  checked={features.dailyLimits}
+                  onToggle={(checked) => setFeatures(prev => ({
+                    ...prev,
+                    dailyLimits: checked
+                  }))}
+                >
+                  <input
+                    type="number"
+                    value={maxDailyDoses}
+                    onChange={(e) => setMaxDailyDoses(Number(e.target.value))}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    min="1"
+                    placeholder="Maximum doses per day"
+                  />
+                </SettingField>
+
+                <SettingField
+                  label="Timing Restrictions"
+                  checked={features.timingRestrictions}
+                  onToggle={(checked) => setFeatures(prev => ({
+                    ...prev,
+                    timingRestrictions: checked
+                  }))}
+                >
+                  <input
+                    type="number"
+                    value={waitingPeriod}
+                    onChange={(e) => setWaitingPeriod(Number(e.target.value))}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                    step="0.5"
+                    placeholder="Hours between doses"
+                  />
+                </SettingField>
+
+                <SettingField
+                  label="Supply Management"
+                  checked={features.supplyManagement}
+                  onToggle={(checked) => setFeatures(prev => ({
+                    ...prev,
+                    supplyManagement: checked
+                  }))}
+                >
+                  <input
+                    type="number"
+                    value={supplyAmount}
+                    onChange={(e) => setSupplyAmount(Number(e.target.value))}
+                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                    min="0"
+                    placeholder="Current supply amount"
+                  />
+                </SettingField>
+
+                {/* Warning information */}
+                {drug.warnings && (
+                  <div className="bg-red-50 p-4 rounded-lg">
+                    <div className="flex items-center space-x-2">
+                      <AlertCircle className="w-5 h-5 text-red-500" />
+                      <label className="text-sm font-medium text-red-700">
+                        Important Safety Information
+                      </label>
+                    </div>
+                    <p className="text-red-700 mt-1">{drug.warnings}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="sticky bottom-0 bg-white border-t p-4 flex gap-3">
+                <button
+                  onClick={handleUpdateSettings}
+                  className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+                >
+                  Save Changes
+                </button>
+                <button
+                  onClick={() => setShowSettings(false)}
+                  className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Confirmation Dialog */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
+            <div className="bg-white w-full sm:rounded-lg sm:max-w-sm p-6"></div>
             <h3 className="text-lg font-medium text-gray-900 mb-4">
               Delete Dose
             </h3>
@@ -641,9 +675,22 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
     </div>
+
+      {/* Warning System */ }
+  {
+    drug.warnings && (
+      <div className="mt-6">
+        <WarningSystem
+          medication={drug}
+          lastDose={drug.doses?.[0]}
+          dailyDoses={getTodaysDoses()}
+        />
+      </div>
+    )
+  }
+    </div >
   );
 };
 
