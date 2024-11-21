@@ -1,114 +1,67 @@
 [
   {
     "id": "1",
-    "name": "Xanax",
-    "category": "Benzo",
-    "dosage": "1mg",
+    "name": "Alprazolam",
+    "category": "Benzodiazepiner",
+    "dosage": "1",
     "dosageUnit": "mg",
-    "description": "Alprazolam is a depressant substance of the benzodiazepine class. Its characteristic effects include anxiety suppression, sedation, disinhibition, and muscle relaxation.",
-    "instructions": "Light: 0.1 - 0.25mg\nCommon: 0.5 - 1.5mg\nHeavy: 2mg+",
-    "warnings": "Try to avoid alcohol. It is advised to never combine with GHB or opiods.",
+    "description": "Merkenavn: Xanax, Xanor, Ksalol",
+    "instructions": "Normal rusdose: 1mg",
+    "warnings": "Benzodiazepiner er sterkt vanedannende og bør ikke kombineres med andre sentraldempende – spesielt GHB eller opioider.",
     "settings": {
       "defaultDosage": "1",
       "defaultDosageUnit": "mg",
-      "minTimeBetweenDoses": 4,
-      "maxDailyDoses": 6
+      "minTimeBetweenDoses": 5,
+      "maxDailyDoses": 5
     }
   },
   {
     "id": "2",
-    "name": "Valium",
-    "category": "Benzo",
-    "dosage": "10mg",
+    "name": "Diazepam",
+    "category": "Benzodiazepiner",
+    "dosage": "10",
     "dosageUnit": "mg",
-    "description": "Diazepam (also known as Valium) is a depressant substance of the benzodiazepine class. Its mechanism of action is to increase the effects of the inhibitory neurotransmitter GABA.",
-    "instructions": "Light: 1 - 2.5mg\nCommon: 5 - 15mg\nHeavy: 30mg+",
-    "warnings": "Try to avoid alcohol. It is advised to never combine with GHB or opiods.",
+    "description": "Merkenavn: Valium, Vival, Stesolid, Bensedin",
+    "instructions": "Normal rusdose: 15mg",
+    "warnings": "Benzodiazepiner er sterkt vanedannende og bør ikke kombineres med andre sentraldempende – spesielt GHB eller opioider.",
     "settings": {
       "defaultDosage": "10",
       "defaultDosageUnit": "mg",
-      "minTimeBetweenDoses": 6,
-      "maxDailyDoses": 4
+      "minTimeBetweenDoses": 5,
+      "maxDailyDoses": 5
     }
   },
   {
     "id": "3",
-    "name": "Rivotril",
-    "category": "Benzo",
-    "dosage": "1mg",
+    "name": "Klonazepam",
+    "category": "Benzodiazepiner",
+    "dosage": "1.5",
     "dosageUnit": "mg",
-    "description": "Clonazepam (trade name Klonopin or Rivotril) is a long-acting psychoactive substance of the benzodiazepine class which produces mainly anxiolytic, but also anticonvulsant, muscle relaxant, amnesic, sedative, depressant and hypnotic effects.",
-    "instructions": "Light: 0.1 - 0.25mg\nCommon: 0.5 - 1mg\nHeavy: 2mg+",
-    "warnings": "Try to avoid alcohol. It is advised to never combine with GHB or opiods.",
+    "description": "Merkenavn: Rivotril",
+    "instructions": "Normal rusdose: 1.5mg",
+    "warnings": "Benzodiazepiner er sterkt vanedannende og bør ikke kombineres med andre sentraldempende – spesielt GHB eller opioider.",
     "settings": {
-      "defaultDosage": "1",
+      "defaultDosage": "1.5",
       "defaultDosageUnit": "mg",
-      "minTimeBetweenDoses": 8,
-      "maxDailyDoses": 3
+      "minTimeBetweenDoses": 7,
+      "maxDailyDoses": 4
     }
   },
   {
     "id": "4",
-    "name": "Sobril",
-    "category": "Benzo",
-    "dosage": "45mg",
+    "name": "Kokain",
+    "category": "Sentralstimulerende",
+    "dosage": "30",
     "dosageUnit": "mg",
-    "description": "Oxazepam is a short-to-intermediate-acting benzodiazepine. Oxazepam is used for the treatment of anxiety, insomnia, and to control symptoms of alcohol withdrawal syndrome. ",
-    "instructions": "Common: 45mg+",
-    "warnings": "Try to avoid alcohol. It is advised to never combine with GHB or opiods.",
+    "description": "Kokain er et kortvirkende sentralstimulerende rusmiddel utvunnet fra bladene av kokaplanten.",
+    "instructions": "Normal rusdose: 30-50mg",
+    "warnings": "Kokain er sterkt vanedannende og skadelig for hjertet.",
     "settings": {
-      "defaultDosage": "45",
+      "defaultDosage": "30",
       "defaultDosageUnit": "mg",
-      "minTimeBetweenDoses": 4,
-      "maxDailyDoses": 6
-    }
-  },
-  {
-    "id": "5",
-    "name": "Cocaine",
-    "category": "Stimulant",
-    "dosage": "1mg",
-    "dosageUnit": "mg",
-    "description": "Alprazolam is a depressant substance of the benzodiazepine class. Its characteristic effects include anxiety suppression, sedation, disinhibition, and muscle relaxation.",
-    "instructions": "Threshold: 0.1 - 0.25mg,\nCommon: 0.5 - 1.5mg,\nHeavy: 2mg+",
-    "warnings": "Do not exceed 6 tablets in 24 hours",
-    "settings": {
-      "defaultDosage": "1",
-      "defaultDosageUnit": "mg",
-      "minTimeBetweenDoses": 4,
-      "maxDailyDoses": 6
-    }
-  },
-  {
-    "id": "6",
-    "name": "Amphetamine",
-    "category": "Stimulant",
-    "dosage": "1mg",
-    "dosageUnit": "mg",
-    "description": "Alprazolam is a depressant substance of the benzodiazepine class. Its characteristic effects include anxiety suppression, sedation, disinhibition, and muscle relaxation.",
-    "instructions": "Threshold: 0.1 - 0.25mg,\nCommon: 0.5 - 1.5mg,\nHeavy: 2mg+",
-    "warnings": "Do not exceed 6 tablets in 24 hours",
-    "settings": {
-      "defaultDosage": "1",
-      "defaultDosageUnit": "mg",
-      "minTimeBetweenDoses": 4,
-      "maxDailyDoses": 6
-    }
-  },
-  {
-    "id": "7",
-    "name": "Ketamine",
-    "category": "Dissociative",
-    "dosage": "1mg",
-    "dosageUnit": "mg",
-    "description": "Alprazolam is a depressant substance of the benzodiazepine class. Its characteristic effects include anxiety suppression, sedation, disinhibition, and muscle relaxation.",
-    "instructions": "Threshold: 0.1 - 0.25mg,\nCommon: 0.5 - 1.5mg,\nHeavy: 2mg+",
-    "warnings": "Do not exceed 6 tablets in 24 hours",
-    "settings": {
-      "defaultDosage": "1",
-      "defaultDosageUnit": "mg",
-      "minTimeBetweenDoses": 4,
-      "maxDailyDoses": 6
+      "minTimeBetweenDoses": 0.75,
+      "maxDailyDoses": 10
     }
   }
+
 ]

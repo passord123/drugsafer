@@ -28,14 +28,38 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     dailyLimits: true,
     timingRestrictions: true
   });
+  const resetForm = () => {
+    setCustomDosage('');
+    setDosageUnit(drug.settings?.defaultDosageUnit || 'mg');
+    setStandardDoseAmount(drug.settings?.defaultDosage?.amount || '');
+    setStandardDoseUnit(drug.settings?.defaultDosage?.unit || 'mg');
+    setMaxDailyDoses(drug.settings?.maxDailyDoses || 4);
+    setWaitingPeriod(drug.settings?.minTimeBetweenDoses || 4);
+    setSupplyAmount(drug.settings?.currentSupply || 0);
+    setFeatures(drug.settings?.features || {
+      supplyManagement: true, 
+      dailyLimits: true,
+      timingRestrictions: true
+    });
+    setDoseDate('');
+    setDoseTime('');
+    setIsEditingDose(false); 
+    setEditingDoseId(null);
+    setShowSettings(false);
+  };
 
   useEffect(() => {
-    if (!isEditingDose) {
-      const now = new Date();
-      setDoseDate(now.toISOString().split('T')[0]);
-      setDoseTime(now.toTimeString().slice(0, 5));
-    }
-  }, [isEditingDose]);
+    const now = new Date();
+    setDoseDate(now.toISOString().split('T')[0]);
+    setDoseTime(now.toTimeString().slice(0, 5));
+    setCustomDosage(drug.settings?.defaultDosage?.amount || '');
+    setDosageUnit(drug.settings?.defaultDosage?.unit || 'mg');
+  }, [drug, isEditingDose]);
+
+  useEffect(() => {
+    resetForm();
+  }, [drug]);
+
 
   const handleEditDose = (dose) => {
     setEditingDoseId(dose.id);
@@ -97,8 +121,8 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     }
 
     const updatedSupply = features.supplyManagement
-      ? Math.max(0, Number(supplyAmount) - 1)
-      : drug.settings?.currentSupply || 0;
+    ? Math.max(0, Number(supplyAmount) - Number(customDosage))
+    : drug.settings?.currentSupply || 0;
 
     const newDose = {
       id: Date.now(),
@@ -127,17 +151,17 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
 
   const getTimeUntilNextDose = () => {
     if (!drug.doses?.[0]) return null;
-  
+
     const lastDoseTime = new Date(drug.doses[0].timestamp);
     const nextDoseTime = new Date(lastDoseTime.getTime() + (waitingPeriod * 60 * 60 * 1000));
     const now = new Date();
-  
+
     if (now >= nextDoseTime) return 'Ready for next dose';
-  
+
     const timeDiff = nextDoseTime - now;
     const diffHours = Math.floor(timeDiff / (1000 * 60 * 60));
     const diffMinutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
-  
+
     return `${diffHours}h ${diffMinutes}m until next dose`;
   };
 
@@ -162,13 +186,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
       }
     });
     setShowSettings(false);
-  };
-
-  const resetForm = () => {
-    setCustomDosage('');
-    setDosageUnit(drug.settings?.defaultDosageUnit || 'mg');
-    setDoseDate('');
-    setDoseTime('');
   };
 
   const getTodaysDoses = () => {
