@@ -7,6 +7,7 @@ import DrugListPage from './pages/DrugListPage';
 import MedicationStats from './pages/MedicationStats';
 import { AlertTriangle, PlusCircle, List, Home, BarChart } from 'lucide-react';
 import MobileLayout from './components/layout/MobileLayout';
+import MobileOptimizedLayout from './components/layout/MobileOptimizedLayout';
 
 const NavLink = ({ to, children, icon: Icon }) => {
   const location = useLocation();
@@ -51,14 +52,14 @@ const App = () => {
         </nav>
 
         <main className="min-h-[calc(100vh-8rem)]">
-          <MobileLayout>
+          <MobileOptimizedLayout>
             <Routes>
               <Route path="/" element={<HomePage />} />
               <Route path="/drugs" element={<DrugListPage />} />
               <Route path="/add" element={<AddDrugPage />} />
               <Route path="/stats" element={<MedicationStats />} />
             </Routes>
-          </MobileLayout>
+          </MobileOptimizedLayout>
         </main>
 
         <footer className="bg-white border-t h-16">
