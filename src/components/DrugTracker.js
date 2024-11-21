@@ -415,7 +415,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
         {/* Record/Edit Dose Modal */}
         {isEditingDose && (
           <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[100]">
-            <div className="bg-white w-full sm:rounded-lg sm:max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="bg-white w-full overflow-y-auto sm:rounded-lg sm:w-full sm:max-w-lg sm:mx-4">
               <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
                 <h3 className="text-lg font-semibold">
                   {editingDoseId ? 'Edit Dose' : 'Record New Dose'}
@@ -520,7 +520,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
         {/* Settings Dialog */}
         {showSettings && (
           <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[100]">
-            <div className="bg-white w-full sm:rounded-lg sm:max-w-lg max-h-[90vh] overflow-y-auto">
+            <div className="bg-white w-full overflow-y-auto sm:rounded-lg sm:w-full sm:max-w-lg sm:mx-4">
               <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Drug Settings</h3>
                 <button
@@ -650,7 +650,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
         {/* Delete Confirmation Dialog */}
         {showDeleteConfirm && (
           <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[100]">
-            <div className="bg-white w-full sm:rounded-lg sm:max-w-sm p-6">
+            <div className="bg-white w-full sm:rounded-lg sm:max-w-sm sm:mx-4 p-6">
               <h3 className="text-lg font-medium text-gray-900 mb-4">
                 Delete Dose
               </h3>

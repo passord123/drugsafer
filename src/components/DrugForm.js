@@ -184,7 +184,6 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
   const renderModal = () => {
     if (!showModal || !selectedDrug) return null;
 
-
     const modalContent = (
       <>
         <div className="sticky top-0 bg-white border-b p-4 flex items-center justify-between">
@@ -193,7 +192,7 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
             onClick={() => setShowModal(false)}
             className="p-2 hover:bg-gray-100 rounded-full"
           >
-            <X className={`${isMobile ? 'w-6 h-6' : 'w-5 h-5'}`} />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
@@ -209,7 +208,7 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
           )}
 
           <div className="space-y-4">
-            <label className={`block font-medium ${isMobile ? 'text-base' : 'text-sm'} text-gray-700`}>
+            <label className="block font-medium text-sm text-gray-700">
               Your Standard Dose
             </label>
             <div className="flex gap-2">
@@ -217,8 +216,7 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
                 type="number"
                 value={customDosage}
                 onChange={(e) => setCustomDosage(e.target.value)}
-                className={`flex-1 border rounded-lg focus:ring-2 focus:ring-blue-500 ${isMobile ? 'px-4 py-3 text-lg' : 'px-3 py-2'
-                  }`}
+                className="flex-1 border rounded-lg focus:ring-2 focus:ring-blue-500 px-3 py-2"
                 placeholder="Enter amount"
                 min="0"
                 step="any"
@@ -226,8 +224,7 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
               <select
                 value={dosageUnit}
                 onChange={(e) => setDosageUnit(e.target.value)}
-                className={`border rounded-lg focus:ring-2 focus:ring-blue-500 ${isMobile ? 'px-4 py-3 text-lg' : 'px-3 py-2'
-                  }`}
+                className="border rounded-lg focus:ring-2 focus:ring-blue-500 px-3 py-2"
               >
                 <option value="mg">mg</option>
                 <option value="ml">ml</option>
@@ -238,15 +235,14 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
           </div>
 
           <div className="space-y-4">
-            <label className={`block font-medium ${isMobile ? 'text-base' : 'text-sm'} text-gray-700`}>
+            <label className="block font-medium text-sm text-gray-700">
               Time Between Doses
             </label>
             <input
               type="number"
               value={waitingPeriod}
               onChange={(e) => setWaitingPeriod(e.target.value)}
-              className={`w-full border rounded-lg focus:ring-2 focus:ring-blue-500 ${isMobile ? 'px-4 py-3 text-lg' : 'px-3 py-2'
-                }`}
+              className="w-full border rounded-lg focus:ring-2 focus:ring-blue-500 px-3 py-2"
               min="0"
               step="0.5"
               placeholder="Hours"
@@ -255,15 +251,14 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
           </div>
 
           <div className="space-y-4">
-            <label className={`block font-medium ${isMobile ? 'text-base' : 'text-sm'} text-gray-700`}>
+            <label className="block font-medium text-sm text-gray-700">
               Daily Limit
             </label>
             <input
               type="number"
               value={maxDailyDoses}
               onChange={(e) => setMaxDailyDoses(e.target.value)}
-              className={`w-full border rounded-lg focus:ring-2 focus:ring-blue-500 ${isMobile ? 'px-4 py-3 text-lg' : 'px-3 py-2'
-                }`}
+              className="w-full border rounded-lg focus:ring-2 focus:ring-blue-500 px-3 py-2"
               min="1"
               placeholder="Maximum doses per day"
             />
@@ -271,15 +266,14 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
           </div>
 
           <div className="space-y-4">
-            <label className={`block font-medium ${isMobile ? 'text-base' : 'text-sm'} text-gray-700`}>
+            <label className="block font-medium text-sm text-gray-700">
               Current Supply
             </label>
             <input
               type="number"
               value={initialSupply}
               onChange={(e) => setInitialSupply(e.target.value)}
-              className={`w-full border rounded-lg focus:ring-2 focus:ring-blue-500 ${isMobile ? 'px-4 py-3 text-lg' : 'px-3 py-2'
-                }`}
+              className="w-full border rounded-lg focus:ring-2 focus:ring-blue-500 px-3 py-2"
               min="0"
               placeholder="Amount available"
             />
@@ -289,7 +283,7 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
           {selectedDrug.warnings && (
             <div className="bg-red-50 p-4 rounded-lg space-y-2">
               <div className="flex items-center gap-2">
-                <AlertCircle className={`text-red-500 ${isMobile ? 'w-6 h-6' : 'w-5 h-5'}`} />
+                <AlertCircle className="text-red-500 w-5 h-5" />
                 <h3 className="font-medium text-red-900">Safety Warning</h3>
               </div>
               <p className="text-red-800">{selectedDrug.warnings}</p>
@@ -300,15 +294,13 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
         <div className="sticky bottom-0 bg-white border-t p-4 flex gap-3">
           <button
             onClick={handleAddDrug}
-            className={`flex-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 ${isMobile ? 'px-4 py-3 text-lg font-medium' : 'px-4 py-2'
-              }`}
+            className="flex-1 bg-blue-500 text-white rounded-lg hover:bg-blue-600 px-4 py-2"
           >
-            Add Substance
+            Add Drug
           </button>
           <button
             onClick={() => setShowModal(false)}
-            className={`flex-1 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 ${isMobile ? 'px-4 py-3 text-lg font-medium' : 'px-4 py-2'
-              }`}
+            className="flex-1 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 px-4 py-2"
           >
             Cancel
           </button>
@@ -317,11 +309,8 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
     );
 
     return (
-      <div className="fixed inset-0 bg-black/50 z-[100] flex items-center justify-center">
-        <div className={`bg-white overflow-y-auto ${isMobile
-            ? 'fixed inset-x-0 bottom-0 rounded-t-3xl max-h-[90vh]'
-            : 'rounded-lg w-full max-w-md max-h-[90vh] m-auto mt-[10vh]'
-          }`}>
+      <div className="fixed inset-0 bg-black/50 z-[100] flex items-end sm:items-center justify-center">
+        <div className="bg-white w-full overflow-y-auto sm:rounded-lg sm:w-full sm:max-w-lg sm:mx-4">
           {modalContent}
         </div>
       </div>
