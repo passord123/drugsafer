@@ -1,6 +1,5 @@
-// src/components/DrugForm.js
 import React, { useState, useMemo } from 'react';
-import { Search, ChevronDown, X, Plus } from 'lucide-react';
+import { Search, ChevronDown, X, Plus, AlertCircle } from 'lucide-react';
 
 const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -63,12 +62,10 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
           },
           features: {
             ...features,
-            // Core features always enabled
             doseTracking: true,
             interactionChecking: true,
             adherenceTracking: true
           },
-          // Only include settings for enabled features
           ...(features.timingRestrictions && {
             minTimeBetweenDoses: Number(waitingPeriod)
           }),
@@ -117,7 +114,7 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
   );
 
   return (
-    <div className="drug-form bg-white p-6 rounded-lg">
+    <div className="drug-form bg-white p-4 sm:p-6 overflow-hidden">
       {/* Search and Category Selection */}
       <div className="space-y-4">
         <div className="relative">
@@ -139,15 +136,16 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
           )}
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-2">
+        <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar">
           {categories.map(category => (
             <button
               key={category}
               onClick={() => setSelectedCategory(category)}
-              className={`px-3 py-1 rounded-full text-sm whitespace-nowrap ${selectedCategory === category
+              className={`px-3 py-1 rounded-full text-sm whitespace-nowrap flex-shrink-0 ${
+                selectedCategory === category
                   ? 'bg-blue-500 text-white'
                   : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                }`}
+              }`}
             >
               {category.charAt(0).toUpperCase() + category.slice(1)}
             </button>
@@ -190,8 +188,8 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
       {/* Drug Configuration Modal */}
       {showModal && selectedDrug && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-6">
+          <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
               <h2 className="text-xl font-semibold">{selectedDrug.name}</h2>
               <button
                 onClick={() => {
@@ -204,8 +202,8 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
               </button>
             </div>
 
-            <div className="space-y-6">
-              {/* Default Dosage - Always shown */}
+            <div className="p-4 space-y-6">
+              {/* Default Dosage */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Default Dosage</label>
                 <div className="flex gap-2">
@@ -292,13 +290,16 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
               {/* Warning information if available */}
               {selectedDrug.warnings && (
                 <div className="bg-red-50 p-4 rounded-lg">
-                  <label className="text-sm font-medium text-red-700">Warnings</label>
-                  <p className="text-red-700">{selectedDrug.warnings}</p>
+                  <div className="flex items-center space-x-2">
+                    <AlertCircle className="w-5 h-5 text-red-500" />
+                    <label className="text-sm font-medium text-red-700">Important Safety Information</label>
+                  </div>
+                  <p className="text-red-700 mt-1">{selectedDrug.warnings}</p>
                 </div>
               )}
             </div>
 
-            <div className="mt-6 flex gap-3">
+            <div className="sticky bottom-0 bg-white border-t p-4 flex gap-3">
               <button
                 onClick={handleAddDrug}
                 className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
