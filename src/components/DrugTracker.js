@@ -32,7 +32,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     drug.settings?.defaultDosage?.unit || drug.settings?.defaultDosageUnit || 'mg'
   );
 
-  // Sync state with prop changes
   useEffect(() => {
     setCustomDosage(
       typeof drug.settings?.defaultDosage === 'object' ?
@@ -51,7 +50,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     );
   }, [drug]);
 
-  // Set default date and time when not editing
   useEffect(() => {
     if (!isEditingDose) {
       const now = new Date();
@@ -249,20 +247,23 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     }
 
     onUpdateSettings(drug.id, {
-      ...drug.settings,
-      defaultDosage: {
-        amount: standardDoseAmount,
-        unit: standardDoseUnit
-      },
-      features: {
-        ...features,
-        doseTracking: true,
-        interactionChecking: true,
-        adherenceTracking: true
-      },
-      maxDailyDoses: Number(maxDailyDoses),
-      minTimeBetweenDoses: Number(waitingPeriod),
-      currentSupply: Number(supplyAmount)
+      ...drug,
+      settings: {
+        ...drug.settings,
+        defaultDosage: {
+          amount: standardDoseAmount,
+          unit: standardDoseUnit
+        },
+        features: {
+          ...features,
+          doseTracking: true,
+          interactionChecking: true,
+          adherenceTracking: true
+        },
+        maxDailyDoses: Number(maxDailyDoses),
+        minTimeBetweenDoses: Number(waitingPeriod),
+        currentSupply: Number(supplyAmount)
+      }
     });
     setShowSettings(false);
   };
@@ -345,7 +346,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
               </div>
             )}
 
-            {/* Supply Status - Fixed import path */}
+            {/* Supply Status */}
             {shouldShowSupplyManagement() && (
               <SupplyTracker
                 currentSupply={Number(drug.settings?.currentSupply || 0)}
@@ -396,8 +397,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
                       </button>
                       {features.timingRestrictions && dose.status !== 'normal' && (
                         <AlertCircle
-                          className={`w-5 h-5 ${dose.status === 'early' ? 'text-red-500' : 'text-yellow-500'
-                            }`}
+                          className={`w-5 h-5 ${dose.status === 'early' ? 'text-red-500' : 'text-yellow-500'}`}
                         />
                       )}
                     </div>
@@ -414,7 +414,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
 
         {/* Record/Edit Dose Modal */}
         {isEditingDose && (
-          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[60]">
+          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[100]">
             <div className="bg-white w-full sm:rounded-lg sm:max-w-lg max-h-[90vh] overflow-y-auto">
               <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
                 <h3 className="text-lg font-semibold">
@@ -519,7 +519,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
 
         {/* Settings Dialog */}
         {showSettings && (
-          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[100]">
             <div className="bg-white w-full sm:rounded-lg sm:max-w-lg max-h-[90vh] overflow-y-auto">
               <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
                 <h3 className="text-lg font-semibold">Drug Settings</h3>
@@ -649,48 +649,47 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
 
         {/* Delete Confirmation Dialog */}
         {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
-            <div className="bg-white w-full sm:rounded-lg sm:max-w-sm p-6"></div>
-            <h3 className="text-lg font-medium text-gray-900 mb-4">
-              Delete Dose
-            </h3>
-            <p className="text-gray-500 mb-6">
-              Are you sure you want to delete this dose? This action cannot be undone.
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={confirmDeleteDose}
-                className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-              >
-                Delete
-              </button>
-              <button
-                onClick={() => {
-                  setShowDeleteConfirm(false);
-                  setDoseToDelete(null);
-                }}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-              >
-                Cancel
-              </button>
+          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[100]">
+            <div className="bg-white w-full sm:rounded-lg sm:max-w-sm p-6">
+              <h3 className="text-lg font-medium text-gray-900 mb-4">
+                Delete Dose
+              </h3>
+              <p className="text-gray-500 mb-6">
+                Are you sure you want to delete this dose? This action cannot be undone.
+              </p>
+              <div className="flex gap-3">
+                <button
+                  onClick={confirmDeleteDose}
+                  className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                >
+                  Delete
+                </button>
+                <button
+                  onClick={() => {
+                    setShowDeleteConfirm(false);
+                    setDoseToDelete(null);
+                  }}
+                  className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         )}
       </div>
 
       {/* Warning System */}
-      {
-        drug.warnings && (
-          <div className="mt-6">
-            <WarningSystem
-              medication={drug}
-              lastDose={drug.doses?.[0]}
-              dailyDoses={getTodaysDoses()}
-            />
-          </div>
-        )
-      }
-    </div >
+      {drug.warnings && (
+        <div className="mt-6">
+          <WarningSystem
+            medication={drug}
+            lastDose={drug.doses?.[0]}
+            dailyDoses={getTodaysDoses()}
+          />
+        </div>
+      )}
+    </div>
   );
 };
 
