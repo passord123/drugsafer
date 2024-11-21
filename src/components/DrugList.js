@@ -6,6 +6,18 @@ const DrugList = ({ drugs, onDelete, onSelect, selectedDrug }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [drugToDelete, setDrugToDelete] = useState(null);
 
+  const handleDrugSelect = (drug) => {
+    onSelect(drug);
+    if (window.innerWidth < 1024) {
+      const trackerElement = document.querySelector('.drug-tracker');
+      if (trackerElement) {
+        setTimeout(() => {
+          trackerElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 100);
+      }
+    }
+  };
+
   const handleDeleteClick = (e, drug) => {
     e.stopPropagation();
     setDrugToDelete(drug);
@@ -98,7 +110,7 @@ const DrugList = ({ drugs, onDelete, onSelect, selectedDrug }) => {
       {drugs.map((drug) => (
         <div
           key={drug.id}
-          onClick={() => onSelect(drug)}
+          onClick={() => handleDrugSelect(drug)}
           className={`p-6 border rounded-lg cursor-pointer transition-all duration-200 
             ${selectedDrug?.id === drug.id 
               ? 'border-blue-500 bg-blue-50' 

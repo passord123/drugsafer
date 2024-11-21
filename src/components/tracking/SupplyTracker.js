@@ -3,6 +3,7 @@ import { Pill } from 'lucide-react';
 
 const SupplyTracker = ({ currentSupply = 0, unit = 'doses' }) => {
   const getSupplyStatus = (amount) => {
+    if (amount <= 0) return 'noSupply';
     if (amount <= 5) return 'low';
     if (amount <= 10) return 'medium';
     return 'good';
@@ -22,7 +23,7 @@ const SupplyTracker = ({ currentSupply = 0, unit = 'doses' }) => {
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="font-semibold">Current Supply</h3>
-          <p className="text-sm opacity-80">Remaining medication</p>
+          <p className="text-sm opacity-80">Remaining drugs</p>
         </div>
         <Pill className="w-5 h-5" />
       </div>
@@ -32,9 +33,10 @@ const SupplyTracker = ({ currentSupply = 0, unit = 'doses' }) => {
           {Number(currentSupply)} {displayUnit}
         </p>
         <p className="text-sm opacity-80">
-          {supplyStatus === 'low' ? 'Low supply - refill soon' :
-           supplyStatus === 'medium' ? 'Medium supply' :
-           'Good supply'}
+          {supplyStatus === 'noSupply' ? 'No drugs remaining' :
+            supplyStatus === 'low' ? 'Low supply' :
+              supplyStatus === 'medium' ? 'Medium supply' :
+                'Good supply'}
         </p>
       </div>
     </div>
