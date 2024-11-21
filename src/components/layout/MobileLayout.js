@@ -23,13 +23,13 @@ const MobileLayout = ({ children }) => {
       <MobileNav />
 
       {/* Footer */}
-      {/* <footer className="hidden lg:flex bg-white border-t h-16">
+      <footer className="hidden lg:flex bg-white border-t h-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex items-center justify-center">
           <p className="text-gray-500 text-sm">
             DrugSafe - Safer drug use
           </p>
         </div>
-      </footer> */}
+      </footer>
     </div>
   );
 };

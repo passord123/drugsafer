@@ -16,8 +16,6 @@ const MobileNav = () => {
   return (
     <>
       {/* Mobile Header */}
-          <div className="fixed top-0 left-0 right-0 h-16 bg-white border-b z-50 px-4 flex items-center justify-between">
-
       <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b z-50 px-4 flex items-center justify-between lg:hidden">
         <Link to="/" className="flex items-center space-x-2">
           <AlertTriangle className="h-6 w-6 text-blue-500" />
@@ -30,8 +28,6 @@ const MobileNav = () => {
           {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
       </header>
-      </div>
-
 
       {/* Bottom Navigation Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t z-50">
