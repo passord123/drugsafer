@@ -32,9 +32,9 @@ const AddDrugPage = () => {
         </button>
         
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Add New Medication</h1>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">Add New Drug</h1>
           <p className="text-gray-600">
-            Search our database or add a custom medication to your tracker
+            Search our database for your drugs of choice and add them to your tracker
           </p>
         </div>
       </div>

@@ -1,8 +1,104 @@
 [
   {
     "id": "1",
-    "name": "Ksalol",
+    "name": "Xanax",
     "category": "Benzo",
+    "dosage": "1mg",
+    "dosageUnit": "mg",
+    "description": "Alprazolam is a depressant substance of the benzodiazepine class. Its characteristic effects include anxiety suppression, sedation, disinhibition, and muscle relaxation.",
+    "instructions": "Threshold: 0.1 - 0.25mg,\nCommon: 0.5 - 1.5mg,\nHeavy: 2mg+",
+    "warnings": "Do not exceed 6 tablets in 24 hours",
+    "settings": {
+      "defaultDosage": "1",
+      "defaultDosageUnit": "mg",
+      "minTimeBetweenDoses": 4,
+      "maxDailyDoses": 6
+    }
+  },
+  {
+    "id": "2",
+    "name": "Valium",
+    "category": "Benzo",
+    "dosage": "1mg",
+    "dosageUnit": "mg",
+    "description": "Alprazolam is a depressant substance of the benzodiazepine class. Its characteristic effects include anxiety suppression, sedation, disinhibition, and muscle relaxation.",
+    "instructions": "Threshold: 0.1 - 0.25mg,\nCommon: 0.5 - 1.5mg,\nHeavy: 2mg+",
+    "warnings": "Do not exceed 6 tablets in 24 hours",
+    "settings": {
+      "defaultDosage": "1",
+      "defaultDosageUnit": "mg",
+      "minTimeBetweenDoses": 4,
+      "maxDailyDoses": 6
+    }
+  },
+  {
+    "id": "3",
+    "name": "Rivotril",
+    "category": "Benzo",
+    "dosage": "1mg",
+    "dosageUnit": "mg",
+    "description": "Alprazolam is a depressant substance of the benzodiazepine class. Its characteristic effects include anxiety suppression, sedation, disinhibition, and muscle relaxation.",
+    "instructions": "Threshold: 0.1 - 0.25mg,\nCommon: 0.5 - 1.5mg,\nHeavy: 2mg+",
+    "warnings": "Do not exceed 6 tablets in 24 hours",
+    "settings": {
+      "defaultDosage": "1",
+      "defaultDosageUnit": "mg",
+      "minTimeBetweenDoses": 4,
+      "maxDailyDoses": 6
+    }
+  },
+  {
+    "id": "4",
+    "name": "Sobril",
+    "category": "Benzo",
+    "dosage": "1mg",
+    "dosageUnit": "mg",
+    "description": "Alprazolam is a depressant substance of the benzodiazepine class. Its characteristic effects include anxiety suppression, sedation, disinhibition, and muscle relaxation.",
+    "instructions": "Threshold: 0.1 - 0.25mg,\nCommon: 0.5 - 1.5mg,\nHeavy: 2mg+",
+    "warnings": "Do not exceed 6 tablets in 24 hours",
+    "settings": {
+      "defaultDosage": "1",
+      "defaultDosageUnit": "mg",
+      "minTimeBetweenDoses": 4,
+      "maxDailyDoses": 6
+    }
+  },
+  {
+    "id": "5",
+    "name": "Cocaine",
+    "category": "Stimulant",
+    "dosage": "1mg",
+    "dosageUnit": "mg",
+    "description": "Alprazolam is a depressant substance of the benzodiazepine class. Its characteristic effects include anxiety suppression, sedation, disinhibition, and muscle relaxation.",
+    "instructions": "Threshold: 0.1 - 0.25mg,\nCommon: 0.5 - 1.5mg,\nHeavy: 2mg+",
+    "warnings": "Do not exceed 6 tablets in 24 hours",
+    "settings": {
+      "defaultDosage": "1",
+      "defaultDosageUnit": "mg",
+      "minTimeBetweenDoses": 4,
+      "maxDailyDoses": 6
+    }
+  },
+  {
+    "id": "6",
+    "name": "Amphetamine",
+    "category": "Stimulant",
+    "dosage": "1mg",
+    "dosageUnit": "mg",
+    "description": "Alprazolam is a depressant substance of the benzodiazepine class. Its characteristic effects include anxiety suppression, sedation, disinhibition, and muscle relaxation.",
+    "instructions": "Threshold: 0.1 - 0.25mg,\nCommon: 0.5 - 1.5mg,\nHeavy: 2mg+",
+    "warnings": "Do not exceed 6 tablets in 24 hours",
+    "settings": {
+      "defaultDosage": "1",
+      "defaultDosageUnit": "mg",
+      "minTimeBetweenDoses": 4,
+      "maxDailyDoses": 6
+    }
+  },
+  {
+    "id": "7",
+    "name": "Ketamine",
+    "category": "Dissociative",
     "dosage": "1mg",
     "dosageUnit": "mg",
     "description": "Alprazolam is a depressant substance of the benzodiazepine class. Its characteristic effects include anxiety suppression, sedation, disinhibition, and muscle relaxation.",

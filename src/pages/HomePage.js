@@ -38,10 +38,10 @@ const HomePage = () => {
       {/* Hero Section */}
       <div className="text-center max-w-3xl mx-auto">
         <h1 className="text-4xl font-bold text-gray-900 mb-6 sm:text-5xl lg:text-6xl">
-          Track Your Medications Safely
+          Track And Reduce Your Drug Use
         </h1>
         <p className="text-xl text-gray-600 leading-relaxed">
-          Keep track of your medications, doses, and timing all in one secure place.
+          Keep track of your drug consumption, doses, and timing all in one secure place.
         </p>
       </div>
 
@@ -50,15 +50,15 @@ const HomePage = () => {
         <ActionCard
           to="/add"
           icon={PlusCircle}
-          title="Add Medication"
-          description="Add a new medication to your tracker"
+          title="Add Drug"
+          description="Add a new drug to your tracker"
           color="bg-blue-500"
         />
         <ActionCard
           to="/drugs"
           icon={List}
-          title="View Medications"
-          description="Check your current medications and history"
+          title="View Your Drugs"
+          description="Check your current drugs and history"
           color="bg-green-500"
         />
       </div>
@@ -72,32 +72,17 @@ const HomePage = () => {
           <FeatureCard
             icon={Clock}
             title="Dose Timing"
-            description="Track when you take each dose and stay on schedule with smart reminders and tracking."
-          />
-          <FeatureCard
-            icon={Bell}
-            title="Reminders"
-            description="Set up customizable reminders to never miss a dose, with flexible scheduling options."
-          />
-          <FeatureCard
-            icon={Calendar}
-            title="Schedule"
-            description="View your complete medication schedule at a glance with our intuitive calendar view."
+            description="Track when you take each dose and stay safe with timers and tracking."
           />
           <FeatureCard
             icon={BarChart}
             title="Analytics"
-            description="Monitor your medication adherence with detailed charts and insights."
+            description="Monitor your drug use and see your recovery progress and sober days with detailed insight."
           />
           <FeatureCard
             icon={List}
             title="History"
-            description="Access your complete medication history with detailed logs and reports."
-          />
-          <FeatureCard
-            icon={Bell}
-            title="Alerts"
-            description="Receive important notifications about potential interactions and safety warnings."
+            description="Access your complete drug history with detailed logs and reports."
           />
         </div>
       </div>

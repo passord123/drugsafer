@@ -10,19 +10,6 @@ const DrugListPage = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [drugs, setDrugs] = useState([]);
 
-    // Helper function to calculate dose status
-    const calculateStatus = (doseTime, previousDoseTime, minTimeBetweenDoses) => {
-        if (!previousDoseTime) return 'normal';
-
-        const doseDate = new Date(doseTime);
-        const prevDose = new Date(previousDoseTime);
-        const hoursBetween = (doseDate - prevDose) / (1000 * 60 * 60);
-
-        if (hoursBetween < minTimeBetweenDoses / 2) return 'early';
-        if (hoursBetween < minTimeBetweenDoses) return 'warning';
-        return 'normal';
-    };
-
     // Update drugs from localStorage when component mounts
     useEffect(() => {
         const savedDrugs = localStorage.getItem('drugs');
@@ -52,21 +39,57 @@ const DrugListPage = () => {
         }
     };
 
+    const handleUpdateDoses = (drugId, updatedDoses) => {
+        const updatedDrugs = drugs.map(drug => {
+            if (drug.id === drugId) {
+                return {
+                    ...drug,
+                    doses: updatedDoses
+                };
+            }
+            return drug;
+        });
+
+        setDrugs(updatedDrugs);
+        localStorage.setItem('drugs', JSON.stringify(updatedDrugs));
+    };
+
+    const handleUpdateSettings = (drugId, updatedDrugOrSettings) => {
+        const updatedDrugs = drugs.map(drug => {
+            if (drug.id === drugId) {
+                // If we received a full drug object (has doses array)
+                if (updatedDrugOrSettings.doses) {
+                    return updatedDrugOrSettings;
+                }
+                // If we received just settings
+                return {
+                    ...drug,
+                    settings: {
+                        ...drug.settings,
+                        ...updatedDrugOrSettings
+                    }
+                };
+            }
+            return drug;
+        });
+
+        setDrugs(updatedDrugs);
+        localStorage.setItem('drugs', JSON.stringify(updatedDrugs));
+
+        // Update selectedDrug if it's the one being edited
+        if (selectedDrug?.id === drugId) {
+            const updatedSelectedDrug = updatedDrugs.find(d => d.id === drugId);
+            setSelectedDrug(updatedSelectedDrug);
+        }
+    };
+
     const handleRecordDose = (drugId, dose, newSupply) => {
         const updatedDrugs = drugs.map(drug => {
             if (drug.id === drugId) {
-                const previousDose = drug.doses?.[0];
-                const currentTime = new Date().toISOString();
-
                 const newDose = {
-                    timestamp: currentTime,
-                    dosage: dose,
-                    previousDoseTime: previousDose?.timestamp,
-                    status: calculateStatus(
-                        currentTime,
-                        previousDose?.timestamp,
-                        drug.settings?.minTimeBetweenDoses || 4
-                    )
+                    id: Date.now(),
+                    timestamp: new Date().toISOString(),
+                    dosage: dose
                 };
 
                 return {
@@ -83,31 +106,32 @@ const DrugListPage = () => {
 
         setDrugs(updatedDrugs);
         localStorage.setItem('drugs', JSON.stringify(updatedDrugs));
+
+        // Update selectedDrug if it's the one being edited
+        if (selectedDrug?.id === drugId) {
+            const updatedSelectedDrug = updatedDrugs.find(d => d.id === drugId);
+            setSelectedDrug(updatedSelectedDrug);
+        }
     };
 
-    const handleUpdateSettings = (drugId, newSettings) => {
-        const updatedDrugs = drugs.map(drug => {
-            if (drug.id === drugId) {
-                return {
-                    ...drug,
-                    settings: {
-                        ...drug.settings,
-                        ...newSettings
-                    }
-                };
-            }
-            return drug;
-        });
+    // Helper function to calculate dose status
+    const calculateDoseStatus = (doseTime, previousDoseTime, minTimeBetweenDoses) => {
+        if (!previousDoseTime) return 'normal';
 
-        setDrugs(updatedDrugs);
-        localStorage.setItem('drugs', JSON.stringify(updatedDrugs));
+        const doseDate = new Date(doseTime);
+        const prevDose = new Date(previousDoseTime);
+        const hoursBetween = (doseDate - prevDose) / (1000 * 60 * 60);
+
+        if (hoursBetween < minTimeBetweenDoses / 2) return 'early';
+        if (hoursBetween < minTimeBetweenDoses) return 'warning';
+        return 'normal';
     };
 
     return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="mb-8 space-y-6">
                 <div className="flex justify-between items-center">
-                    <h1 className="text-3xl font-bold text-gray-900">My Medications</h1>
+                    <h1 className="text-3xl font-bold text-gray-900">My Drugs</h1>
                     <Link
                         to="/add"
                         className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
@@ -123,7 +147,7 @@ const DrugListPage = () => {
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="Search medications..."
+                        placeholder="Search drugs..."
                         className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
                     />
                 </div>
@@ -140,7 +164,7 @@ const DrugListPage = () => {
                         />
                     ) : (
                         <div className="text-center py-12">
-                            <p className="text-gray-500 mb-6">No medications found</p>
+                            <p className="text-gray-500 mb-6">No drugs found</p>
                             <Link
                                 to="/add"
                                 className="inline-flex items-center px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
@@ -158,6 +182,7 @@ const DrugListPage = () => {
                             drug={selectedDrug}
                             onRecordDose={handleRecordDose}
                             onUpdateSettings={handleUpdateSettings}
+                            onUpdateDoses={handleUpdateDoses}
                         />
                     </div>
                 )}

@@ -138,7 +138,7 @@ const MedicationStats = () => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900 mb-4">Recovery Progress</h1>
-        <p className="text-gray-600">Track your journey to medication independence</p>
+        <p className="text-gray-600">Track your drug reduction journey</p>
       </div>
 
       {/* Sober Streak */}
@@ -152,13 +152,13 @@ const MedicationStats = () => {
             <p className="text-4xl font-bold text-green-600 mb-2">
               {stats.currentSoberStreak} days
             </p>
-            <p className="text-green-600">Current medication-free streak</p>
+            <p className="text-green-600">Current sober streak</p>
           </div>
           <div>
             <p className="text-4xl font-bold text-green-600 mb-2">
               {stats.longestSoberPeriod} days
             </p>
-            <p className="text-green-600">Longest period without medication</p>
+            <p className="text-green-600">Longest period without drugs</p>
           </div>
         </div>
       </div>
@@ -174,7 +174,7 @@ const MedicationStats = () => {
         />
         <StatCard
           icon={Calendar}
-          title="Medications Tracked"
+          title="Drugs Tracked"
           value={stats.medicationCount}
           subtitle="Currently monitoring"
         />
@@ -182,7 +182,7 @@ const MedicationStats = () => {
           icon={Shield}
           title="Milestone"
           value={`${stats.longestSoberPeriod} days`}
-          subtitle="Longest medication-free period"
+          subtitle="Longest drug-free period"
           success={stats.longestSoberPeriod > 0}
         />
       </div>
@@ -225,7 +225,7 @@ const MedicationStats = () => {
                   <p className="text-2xl font-bold text-green-600">
                     {med.currentSoberStreak}
                   </p>
-                  <p className="text-sm text-gray-500">Days medication-free</p>
+                  <p className="text-sm text-gray-500">Sober days</p>
                 </div>
               </div>
             </div>
