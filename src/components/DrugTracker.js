@@ -414,7 +414,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
 
         {/* Record/Edit Dose Modal */}
         {isEditingDose && (
-          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
+      <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-[60]">
             <div className="bg-white w-full sm:rounded-lg sm:max-w-lg max-h-[90vh] overflow-y-auto">
               <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
                 <h3 className="text-lg font-semibold">
