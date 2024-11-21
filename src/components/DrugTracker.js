@@ -112,7 +112,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     setCustomDosage(amount);
     setDosageUnit(unit);
 
-    // Set date and time from timestamp
     const { dateStr, timeStr } = formatDateTimeForInput(dose.timestamp);
     setDoseDate(dateStr);
     setDoseTime(timeStr);
@@ -134,6 +133,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     setShowDeleteConfirm(false);
     setDoseToDelete(null);
   };
+
   const handleUpdateDose = () => {
     if (!customDosage || customDosage <= 0) {
       alert('Please enter a valid dosage amount');
@@ -164,7 +164,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
       return dose;
     });
 
-    // Sort doses by timestamp in descending order
     const sortedDoses = updatedDoses.sort((a, b) =>
       new Date(b.timestamp) - new Date(a.timestamp)
     );
@@ -199,7 +198,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
       return;
     }
 
-    // Only check daily limits if the feature is enabled
     if (features.dailyLimits) {
       const todaysDoses = getTodaysDoses();
       if (todaysDoses >= maxDailyDoses) {
@@ -208,7 +206,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
       }
     }
 
-    // Only update supply if supply management is enabled
     const updatedSupply = features.supplyManagement
       ? Math.max(0, Number(supplyAmount) - 1)
       : drug.settings?.currentSupply || 0;
@@ -223,7 +220,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
       )
     };
 
-    // Add new dose and sort all doses by timestamp
     const sortedDoses = [newDose, ...(drug.doses || [])].sort((a, b) =>
       new Date(b.timestamp) - new Date(a.timestamp)
     );
@@ -303,7 +299,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
   };
 
   return (
-    <div className="p-6 space-y-6 relative pb-32 sm:pb-6">
+    <div className="p-6 pb-24 md:pb-6 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -311,8 +307,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
           <p className="text-sm text-gray-500">
             Standard dose: {typeof drug.settings?.defaultDosage === 'object'
               ? `${drug.settings.defaultDosage.amount} ${drug.settings.defaultDosage.unit}`
-              : `${standardDoseAmount} ${standardDoseUnit}`
-            }
+              : `${standardDoseAmount} ${standardDoseUnit}`}
           </p>
         </div>
         <button
@@ -410,8 +405,8 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
 
       {/* Record/Edit Dose Form */}
       {isEditingDose && (
-        <div className="fixed inset-x-0 bottom-0 bg-white border-t p-4 z-50 sm:relative sm:border-0 sm:bg-transparent sm:p-0 sm:z-auto">
-          <div className="max-w-lg mx-auto flex flex-col gap-4">
+        <div className="fixed inset-x-0 bottom-0 bg-white border-t p-4 z-40">
+          <div className="max-w-lg mx-auto space-y-4">
             <div className="flex gap-2">
               <input
                 type="number"
@@ -450,9 +445,9 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
             <div className="flex gap-2">
               <button
                 onClick={editingDoseId ? handleUpdateDose : handleRecordDose}
-                className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+                className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
               >
-                {editingDoseId ? 'Update' : 'Record'}
+                {editingDoseId ? 'Update Dose' : 'Record Dose'}
               </button>
               <button
                 onClick={() => {
@@ -462,7 +457,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
                   setDoseDate('');
                   setDoseTime('');
                 }}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
               >
                 Cancel
               </button>
@@ -471,25 +466,27 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
         </div>
       )}
 
-      {/* Record New Dose Button - Updated positioning */}
+      {/* Record New Dose Button */}
       {!isEditingDose && (
-        <div className="fixed inset-x-0 bottom-0 p-4 bg-white border-t sm:relative sm:border-0 sm:p-0 sm:bg-transparent">
-          <button
-            onClick={() => setIsEditingDose(true)}
-            className="w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 
-                     bg-blue-500 hover:bg-blue-600 text-white transition-colors"
-          >
-            <PlusCircle className="w-5 h-5" />
-            <span>Record New Dose</span>
-          </button>
+        <div className="fixed inset-x-0 bottom-0 p-4 bg-white border-t z-40">
+          <div className="max-w-lg mx-auto">
+            <button
+              onClick={() => setIsEditingDose(true)}
+              className="w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 
+                       bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+            >
+              <PlusCircle className="w-5 h-5" />
+              <span>Record New Dose</span>
+            </button>
+          </div>
         </div>
       )}
 
-      {/* Settings Modal */}
+      {/* Settings Dialog */}
       {showSettings && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <div className="flex justify-between items-center mb-6">
+          <div className="bg-white rounded-lg w-full max-w-md max-h-[90vh] overflow-y-auto">
+            <div className="sticky top-0 bg-white border-b p-4 flex justify-between items-center">
               <h3 className="text-xl font-bold text-gray-900">Drug Settings</h3>
               <button
                 onClick={() => setShowSettings(false)}
@@ -499,7 +496,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
               </button>
             </div>
 
-            <div className="space-y-6">
+            <div className="p-4 space-y-6">
               {/* Standard Dose Setting */}
               <div className="space-y-2">
                 <label className="block text-sm font-medium text-gray-700">
@@ -526,11 +523,9 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
                     <option value="tablets">tablets</option>
                   </select>
                 </div>
-                <p className="text-sm text-gray-500">
-                  This is your typical dose amount for harm reduction tracking
-                </p>
               </div>
 
+              {/* Settings Fields */}
               <SettingField
                 label="Daily Dose Limits"
                 checked={features.dailyLimits}
@@ -586,19 +581,21 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
                 />
               </SettingField>
 
-              {/* Warning information if available */}
+              {/* Warning information */}
               {drug.warnings && (
                 <div className="bg-red-50 p-4 rounded-lg">
                   <div className="flex items-center space-x-2">
                     <AlertCircle className="w-5 h-5 text-red-500" />
-                    <label className="text-sm font-medium text-red-700">Important Safety Information</label>
+                    <label className="text-sm font-medium text-red-700">
+                      Important Safety Information
+                    </label>
                   </div>
                   <p className="text-red-700 mt-1">{drug.warnings}</p>
                 </div>
               )}
             </div>
 
-            <div className="mt-6 flex gap-3">
+            <div className="sticky bottom-0 bg-white border-t p-4 flex gap-3">
               <button
                 onClick={handleUpdateSettings}
                 className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
@@ -619,7 +616,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
       {/* Delete Confirmation Dialog */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-xl max-w-sm w-full p-6">
+          <div className="bg-white rounded-lg w-full max-w-sm p-6">
             <h3 className="text-lg font-medium text-gray-900 mb-4">
               Delete Dose
             </h3>
@@ -649,4 +646,5 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     </div>
   );
 };
+
 export default DrugTracker;
