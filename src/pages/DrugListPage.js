@@ -8,27 +8,12 @@ import DrugTracker from '../components/DrugTracker';
 const DrugListPage = () => {
     const [selectedDrug, setSelectedDrug] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [drugs, setDrugs] = useState([]);
 
-    // Load drugs from localStorage on initial render
-    const [drugs, setDrugs] = useState(() => {
-        const savedDrugs = localStorage.getItem('drugs');
-        return savedDrugs ? JSON.parse(savedDrugs) : [];
-    });
-
-    // Update selectedDrug when drugs change
-    useEffect(() => {
-        if (selectedDrug) {
-            const updatedSelectedDrug = drugs.find(drug => drug.id === selectedDrug.id);
-            setSelectedDrug(updatedSelectedDrug);
-        }
-    }, [drugs]);
-
-    const filteredDrugs = drugs.filter(drug =>
-        drug.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
-
+    // Helper function to calculate dose status
     const calculateStatus = (doseTime, previousDoseTime, minTimeBetweenDoses) => {
         if (!previousDoseTime) return 'normal';
+
         const doseDate = new Date(doseTime);
         const prevDose = new Date(previousDoseTime);
         const hoursBetween = (doseDate - prevDose) / (1000 * 60 * 60);
@@ -37,6 +22,26 @@ const DrugListPage = () => {
         if (hoursBetween < minTimeBetweenDoses) return 'warning';
         return 'normal';
     };
+
+    // Update drugs from localStorage when component mounts
+    useEffect(() => {
+        const savedDrugs = localStorage.getItem('drugs');
+        if (savedDrugs) {
+            setDrugs(JSON.parse(savedDrugs));
+        }
+    }, []);
+
+    // Update selectedDrug when drugs change
+    useEffect(() => {
+        if (selectedDrug) {
+            const updatedSelectedDrug = drugs.find(drug => drug.id === selectedDrug.id);
+            setSelectedDrug(updatedSelectedDrug);
+        }
+    }, [drugs, selectedDrug]);
+
+    const filteredDrugs = drugs.filter(drug =>
+        drug.name.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     const handleDelete = (id) => {
         const updatedDrugs = drugs.filter(drug => drug.id !== id);
@@ -58,13 +63,13 @@ const DrugListPage = () => {
                     dosage: dose,
                     previousDoseTime: previousDose?.timestamp,
                     status: calculateStatus(
-                        currentTime, 
+                        currentTime,
                         previousDose?.timestamp,
                         drug.settings?.minTimeBetweenDoses || 4
                     )
                 };
 
-                const updatedDrug = {
+                return {
                     ...drug,
                     doses: [newDose, ...(drug.doses || [])],
                     settings: {
@@ -72,13 +77,6 @@ const DrugListPage = () => {
                         currentSupply: newSupply
                     }
                 };
-
-                // If this is the selected drug, update it
-                if (selectedDrug?.id === drugId) {
-                    setSelectedDrug(updatedDrug);
-                }
-
-                return updatedDrug;
             }
             return drug;
         });
@@ -90,20 +88,13 @@ const DrugListPage = () => {
     const handleUpdateSettings = (drugId, newSettings) => {
         const updatedDrugs = drugs.map(drug => {
             if (drug.id === drugId) {
-                const updatedDrug = {
+                return {
                     ...drug,
                     settings: {
                         ...drug.settings,
                         ...newSettings
                     }
                 };
-
-                // If this is the selected drug, update it
-                if (selectedDrug?.id === drugId) {
-                    setSelectedDrug(updatedDrug);
-                }
-
-                return updatedDrug;
             }
             return drug;
         });

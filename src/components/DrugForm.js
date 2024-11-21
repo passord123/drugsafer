@@ -12,6 +12,11 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
   const [waitingPeriod, setWaitingPeriod] = useState(4);
   const [maxDailyDoses, setMaxDailyDoses] = useState(4);
   const [initialSupply, setInitialSupply] = useState('0');
+  const [features, setFeatures] = useState({
+    supplyManagement: true,
+    dailyLimits: true,
+    timingRestrictions: true
+  });
 
   const categories = useMemo(() => {
     const drugsArray = Array.isArray(defaultDrugs) ? defaultDrugs : [];
@@ -38,6 +43,49 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
     setShowModal(true);
   };
 
+  const handleAddDrug = () => {
+    if (!customDosage || customDosage <= 0) {
+      alert('Please enter a valid dosage amount');
+      return;
+    }
+
+    if (selectedDrug) {
+      onAdd({
+        ...selectedDrug,
+        id: Date.now(),
+        doses: [],
+        dateAdded: new Date().toISOString(),
+        dosage: `${customDosage} ${dosageUnit}`,
+        settings: {
+          defaultDosage: {
+            amount: customDosage,
+            unit: dosageUnit
+          },
+          features: {
+            ...features,
+            // Core features always enabled
+            doseTracking: true,
+            interactionChecking: true,
+            adherenceTracking: true
+          },
+          // Only include settings for enabled features
+          ...(features.timingRestrictions && {
+            minTimeBetweenDoses: Number(waitingPeriod)
+          }),
+          ...(features.dailyLimits && {
+            maxDailyDoses: Number(maxDailyDoses)
+          }),
+          ...(features.supplyManagement && {
+            currentSupply: Number(initialSupply)
+          })
+        }
+      });
+      setShowModal(false);
+      setSelectedDrug(null);
+      setSearchQuery('');
+    }
+  };
+
   const handleAddCustomDrug = () => {
     const customDrug = {
       id: Date.now(),
@@ -48,32 +96,25 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
     handleDrugSelect(customDrug);
   };
 
-  const handleAddDrug = () => {
-    if (selectedDrug) {
-      onAdd({
-        ...selectedDrug,
-        id: Date.now(),
-        doses: [],
-        dateAdded: new Date().toISOString(),
-        dosage: `${customDosage} ${dosageUnit}`,
-        currentSupply: Number(initialSupply),
-        minTimeBetweenDoses: Number(waitingPeriod),
-        maxDailyDoses: Number(maxDailyDoses),
-        settings: {
-          defaultDosage: {
-            amount: customDosage,
-            unit: dosageUnit
-          },
-          waitingPeriod: Number(waitingPeriod),
-          maxDailyDoses: Number(maxDailyDoses),
-          currentSupply: Number(initialSupply)
-        }
-      });
-      setShowModal(false);
-      setSelectedDrug(null);
-      setSearchQuery('');
-    }
-  };
+  const SettingField = ({ label, checked, onToggle, children }) => (
+    <div className="space-y-2">
+      <div className="flex justify-between items-center">
+        <label className="block text-sm font-medium text-gray-700">
+          {label}
+        </label>
+        <label className="flex items-center space-x-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={checked}
+            onChange={(e) => onToggle(e.target.checked)}
+            className="w-4 h-4 rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+          />
+          <span className="text-sm text-gray-600">Enable</span>
+        </label>
+      </div>
+      {checked && children}
+    </div>
+  );
 
   return (
     <div className="drug-form bg-white p-6 rounded-lg">
@@ -150,10 +191,21 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
       {showModal && selectedDrug && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
           <div className="bg-white rounded-lg max-w-md w-full p-6">
-            <h2 className="text-xl font-semibold mb-6">{selectedDrug.name}</h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-semibold">{selectedDrug.name}</h2>
+              <button
+                onClick={() => {
+                  setShowModal(false);
+                  setSelectedDrug(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
             <div className="space-y-6">
-              {/* Dosage Configuration */}
+              {/* Default Dosage - Always shown */}
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Default Dosage</label>
                 <div className="flex gap-2">
@@ -179,11 +231,34 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
                 </div>
               </div>
 
-              {/* Waiting Period */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Minimum Hours Between Doses
-                </label>
+              {/* Daily Limits Setting */}
+              <SettingField
+                label="Daily Dose Limits"
+                checked={features.dailyLimits}
+                onToggle={(checked) => setFeatures(prev => ({
+                  ...prev,
+                  dailyLimits: checked
+                }))}
+              >
+                <input
+                  type="number"
+                  value={maxDailyDoses}
+                  onChange={(e) => setMaxDailyDoses(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  min="1"
+                  placeholder="Maximum doses per day"
+                />
+              </SettingField>
+
+              {/* Timing Restrictions Setting */}
+              <SettingField
+                label="Timing Restrictions"
+                checked={features.timingRestrictions}
+                onToggle={(checked) => setFeatures(prev => ({
+                  ...prev,
+                  timingRestrictions: checked
+                }))}
+              >
                 <input
                   type="number"
                   value={waitingPeriod}
@@ -191,45 +266,30 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                   min="0"
                   step="0.5"
+                  placeholder="Hours between doses"
                 />
-              </div>
+              </SettingField>
 
-              {/* Max Daily Doses */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Maximum Doses per Day
-                </label>
-                <input
-                  type="number"
-                  value={maxDailyDoses}
-                  onChange={(e) => setMaxDailyDoses(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  min="1"
-                  step="1"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">
-                  Initial Supply Amount
-                </label>
+              {/* Supply Management Setting */}
+              <SettingField
+                label="Supply Management"
+                checked={features.supplyManagement}
+                onToggle={(checked) => setFeatures(prev => ({
+                  ...prev,
+                  supplyManagement: checked
+                }))}
+              >
                 <input
                   type="number"
                   value={initialSupply}
                   onChange={(e) => setInitialSupply(e.target.value)}
                   className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
                   min="0"
-                  step="1"
+                  placeholder="Initial supply amount"
                 />
-              </div>
+              </SettingField>
 
-              {selectedDrug.description && (
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Description</label>
-                  <p className="text-gray-900 bg-gray-50 p-3 rounded-lg">{selectedDrug.description}</p>
-                </div>
-              )}
-
+              {/* Warning information if available */}
               {selectedDrug.warnings && (
                 <div className="bg-red-50 p-4 rounded-lg">
                   <label className="text-sm font-medium text-red-700">Warnings</label>

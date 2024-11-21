@@ -1,14 +1,15 @@
 import React from 'react';
 import { Pill } from 'lucide-react';
 
-const SupplyTracker = ({ currentSupply, unit }) => {
+const SupplyTracker = ({ currentSupply = 0, unit = 'doses' }) => {
   const getSupplyStatus = (amount) => {
     if (amount <= 5) return 'low';
     if (amount <= 10) return 'medium';
     return 'good';
   };
 
-  const supplyStatus = getSupplyStatus(currentSupply);
+  const supplyStatus = getSupplyStatus(Number(currentSupply));
+  const displayUnit = String(unit || 'doses');
 
   const statusColors = {
     low: 'bg-red-50 text-red-700 border-red-200',
@@ -17,7 +18,7 @@ const SupplyTracker = ({ currentSupply, unit }) => {
   };
 
   return (
-    <div className={`rounded-lg border p-4 ${statusColors[supplyStatus]}`}>
+    <div className={`rounded-lg border p-4 h-full ${statusColors[supplyStatus]}`}>
       <div className="flex justify-between items-start mb-4">
         <div>
           <h3 className="font-semibold">Current Supply</h3>
@@ -28,7 +29,7 @@ const SupplyTracker = ({ currentSupply, unit }) => {
 
       <div className="text-center py-4">
         <p className="text-3xl font-bold mb-2">
-          {currentSupply} {unit}
+          {Number(currentSupply)} {displayUnit}
         </p>
         <p className="text-sm opacity-80">
           {supplyStatus === 'low' ? 'Low supply - refill soon' :

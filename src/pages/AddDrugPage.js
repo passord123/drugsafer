@@ -1,4 +1,3 @@
-// src/pages/AddDrugPage.js
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import DrugForm from '../components/DrugForm';
@@ -10,20 +9,14 @@ const AddDrugPage = () => {
   const defaultDrugs = Array.isArray(drugData) ? drugData : [];
 
   const handleAddDrug = (drug) => {
+    // Get existing drugs from localStorage
     const existingDrugs = JSON.parse(localStorage.getItem('drugs') || '[]');
-    const updatedDrugs = [...existingDrugs, {
-      ...drug,
-      doses: [],
-      dateAdded: new Date().toISOString(),
-      settings: {
-        defaultDosage: drug.dosage,
-        defaultDosageUnit: drug.dosageUnit || 'mg',
-        minTimeBetweenDoses: drug.minTimeBetweenDoses || 4,
-        maxDailyDoses: drug.maxDailyDoses || 4,
-      }
-    }];
+    const updatedDrugs = [...existingDrugs, drug];
     
+    // Save to localStorage
     localStorage.setItem('drugs', JSON.stringify(updatedDrugs));
+    
+    // Navigate back to drugs page
     navigate('/drugs');
   };
 
