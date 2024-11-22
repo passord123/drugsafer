@@ -1,6 +1,8 @@
 import React from 'react';
 
-const DrugHistory = ({ doses, dosageUnit }) => {
+const DrugHistory = ({ doses = [], dosageUnit = 'mg' }) => {
+  console.log('DrugHistory doses:', doses); // Debug log
+
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp);
     const today = new Date();
@@ -17,12 +19,31 @@ const DrugHistory = ({ doses, dosageUnit }) => {
     }
   };
 
+  if (!Array.isArray(doses)) {
+    console.log('Doses is not an array:', doses); // Debug log
+    return (
+      <div className="p-8 text-center text-gray-500">
+        No dose history available (invalid data format)
+      </div>
+    );
+  }
+
+  if (doses.length === 0) {
+    return (
+      <div className="p-8 text-center text-gray-500">
+        No doses recorded yet
+      </div>
+    );
+  }
+
+  // Create a copy of the array before sorting
   const sortedDoses = [...doses].sort((a, b) => 
     new Date(b.timestamp) - new Date(a.timestamp)
   );
   
   // Group doses
   const groupedDoses = sortedDoses.reduce((groups, dose) => {
+    if (!dose || !dose.timestamp) return groups; // Skip invalid doses
     const date = new Date(dose.timestamp).toDateString();
     if (!groups[date]) {
       groups[date] = [];
@@ -42,7 +63,9 @@ const DrugHistory = ({ doses, dosageUnit }) => {
           </div>
           {dailyDoses.map((dose, index) => (
             <div key={dose.id || index} className="flex items-center justify-between px-4 py-2 bg-white">
-              <span className="font-medium">{dose.dosage} {dosageUnit}</span>
+              <span className="font-medium">
+                {typeof dose.dosage === 'number' ? dose.dosage : parseFloat(dose.dosage)} {dosageUnit}
+              </span>
               <span className="text-sm text-gray-500">
                 {date === new Date().toDateString() || 
                  date === new Date(Date.now() - 86400000).toDateString()

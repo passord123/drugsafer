@@ -1,9 +1,11 @@
 import React, { useState, useMemo } from 'react';
 import { Search, X, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useAlerts } from '../contexts/AlertContext';
 import MobileModal from './layout/MobileModal';
 
 const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
+  const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [showDrugDetails, setShowDrugDetails] = useState(false);
@@ -16,8 +18,40 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
   const [formErrors, setFormErrors] = useState({});
   const [enableSupply, setEnableSupply] = useState(true);
   const [currentSupply, setCurrentSupply] = useState('0');
-  
+
   const { addAlert } = useAlerts();
+
+  const handleAddDrug = () => {
+    if (!selectedDrug) return;
+
+    const existingDrugs = JSON.parse(localStorage.getItem('drugs') || '[]');
+
+    const newDrug = {
+      id: Date.now(),
+      name: selectedDrug.name,
+      category: selectedDrug.category || 'Custom',
+      dosage: customDosage,
+      dosageUnit: dosageUnit,
+      description: selectedDrug.description || '',
+      instructions: selectedDrug.instructions || '',
+      warnings: selectedDrug.warnings || '',
+      dateAdded: new Date().toISOString(),
+      doses: [],
+      settings: {
+        defaultDosage: customDosage,
+        defaultDosageUnit: dosageUnit,
+        minTimeBetweenDoses: Number(waitingPeriod),
+        maxDailyDoses: Number(maxDailyDoses),
+        trackSupply: enableSupply,
+        currentSupply: enableSupply ? Number(currentSupply) : null
+      }
+    };
+
+    const updatedDrugs = [...existingDrugs, newDrug];
+    localStorage.setItem('drugs', JSON.stringify(updatedDrugs));
+    
+    navigate('/drugs');
+  };
 
   const categories = useMemo(() => {
     const uniqueCats = new Set(defaultDrugs.map(drug => drug.category));
@@ -74,49 +108,6 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
     setWaitingPeriod(drug.settings?.minTimeBetweenDoses || 4);
     setMaxDailyDoses(drug.settings?.maxDailyDoses || 4);
     setShowDrugDetails(true);
-  };
-
-  const handleAddDrug = () => {
-    const values = {
-      customDosage,
-      waitingPeriod,
-      maxDailyDoses,
-      enableSupply,
-      currentSupply
-    };
-
-    const errors = validateDrugForm(values);
-    
-    if (Object.keys(errors).length > 0) {
-      setFormErrors(errors);
-      addAlert('error', Object.values(errors)[0]);
-      return;
-    }
-
-    setFormErrors({});
-
-    onAdd({
-      ...selectedDrug,
-      id: Date.now(),
-      doses: [],
-      dateAdded: new Date().toISOString(),
-      settings: {
-        defaultDosage: {
-          amount: customDosage,
-          unit: dosageUnit
-        },
-        features: {
-          supplyManagement: enableSupply,
-          dailyLimits: true,
-          timingRestrictions: true
-        },
-        minTimeBetweenDoses: Number(waitingPeriod),
-        maxDailyDoses: Number(maxDailyDoses),
-        currentSupply: enableSupply ? Number(currentSupply) : null
-      }
-    });
-
-    resetForm();
   };
 
   const handleAddCustomDrug = () => {

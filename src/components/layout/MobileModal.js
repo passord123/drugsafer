@@ -11,10 +11,12 @@ const MobileModal = ({
 }) => {
   useEffect(() => {
     if (isOpen) {
+      // Prevent background scrolling
       document.body.style.overflow = 'hidden';
       document.body.style.position = 'fixed';
       document.body.style.width = '100%';
     } else {
+      // Restore scrolling when modal closes
       document.body.style.overflow = '';
       document.body.style.position = '';
       document.body.style.width = '';
@@ -30,7 +32,7 @@ const MobileModal = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50">
+    <div className="fixed inset-0 z-[100]"> {/* Increased z-index to appear above navbar */}
       {/* Overlay */}
       <div 
         className="absolute inset-0 bg-black/50" 

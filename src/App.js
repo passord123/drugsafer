@@ -50,7 +50,7 @@ const App = () => {
                     <span className="text-xl font-bold text-gray-900">DrugSafe</span>
                   </Link>
                 </div>
-
+    
                 <div className="flex items-center space-x-2">
                   <NavLink to="/" icon={Home}>Home</NavLink>
                   <NavLink to="/drugs" icon={List}>My Drugs</NavLink>

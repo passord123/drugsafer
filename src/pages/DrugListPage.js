@@ -10,11 +10,21 @@ const DrugListPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [drugs, setDrugs] = useState([]);
 
+
   useEffect(() => {
-    const savedDrugs = localStorage.getItem('drugs');
-    if (savedDrugs) {
-      setDrugs(JSON.parse(savedDrugs));
-    }
+    const loadDrugs = () => {
+      const savedDrugs = localStorage.getItem('drugs');
+      if (savedDrugs) {
+        const parsedDrugs = JSON.parse(savedDrugs);
+        console.log('Loaded drugs:', parsedDrugs); // Add this line
+        setDrugs(parsedDrugs);
+      }
+    };
+
+    loadDrugs();
+    // Add event listener for storage changes
+    window.addEventListener('storage', loadDrugs);
+    return () => window.removeEventListener('storage', loadDrugs);
   }, []);
 
   useEffect(() => {
@@ -33,65 +43,42 @@ const DrugListPage = () => {
     }
   };
 
-  const handleUpdateSettings = (drugId, updatedDrugOrSettings) => {
+  const handleUpdateSettings = (drugId, updatedSettings) => {
     const updatedDrugs = drugs.map(drug => {
       if (drug.id === drugId) {
-        if (updatedDrugOrSettings.doses) {
-          return updatedDrugOrSettings;
-        }
         return {
           ...drug,
           settings: {
             ...drug.settings,
-            ...updatedDrugOrSettings
+            ...updatedSettings
           }
         };
       }
       return drug;
     });
 
-    setDrugs(updatedDrugs);
     localStorage.setItem('drugs', JSON.stringify(updatedDrugs));
+    setDrugs(updatedDrugs);
 
     if (selectedDrug?.id === drugId) {
-      const updatedSelectedDrug = updatedDrugs.find(d => d.id === drugId);
-      setSelectedDrug(updatedSelectedDrug);
+      const updatedDrug = updatedDrugs.find(d => d.id === drugId);
+      setSelectedDrug(updatedDrug);
     }
   };
 
-  const handleRecordDose = (drugId, doseData, newSupply) => {
-    const updatedDrugs = drugs.map(drug => {
-      if (drug.id === drugId) {
-        const newDose = {
-          id: doseData.id,
-          timestamp: doseData.timestamp,
-          dosage: doseData.dosage,  // Using the dosage from the doseData object
-          status: doseData.status
-        };
-  
-        return {
-          ...drug,
-          doses: [newDose, ...(drug.doses || [])].sort((a, b) =>
-            new Date(b.timestamp) - new Date(a.timestamp)
-          ),
-          settings: {
-            ...drug.settings,
-            currentSupply: newSupply
-          }
-        };
-      }
-      return drug;
-    });
-  
-    setDrugs(updatedDrugs);
+  const handleRecordDose = (drugId, updatedDrug) => {
+    // Update localStorage
+    const updatedDrugs = drugs.map(drug =>
+      drug.id === drugId ? updatedDrug : drug
+    );
     localStorage.setItem('drugs', JSON.stringify(updatedDrugs));
-  
+
+    // Update state
+    setDrugs(updatedDrugs);
     if (selectedDrug?.id === drugId) {
-      const updatedSelectedDrug = updatedDrugs.find(d => d.id === drugId);
-      setSelectedDrug(updatedSelectedDrug);
+      setSelectedDrug(updatedDrug);
     }
   };
-
   const calculateDoseStatus = (doseTime, previousDoseTime, minTimeBetweenDoses) => {
     if (!previousDoseTime) return 'normal';
     const doseDate = new Date(doseTime);

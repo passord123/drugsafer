@@ -1,11 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { getSubstanceProfile } from './timingProfiles';
+import { Clock, AlertTriangle } from 'lucide-react';
+import { getSubstanceProfile } from './DrugTimer/timingProfiles';
 
 const DrugTimeline = ({ lastDoseTime, drugName }) => {
   const [currentPhase, setCurrentPhase] = useState('none');
   const [progress, setProgress] = useState(0);
+  const [timeToNextPhase, setTimeToNextPhase] = useState(null);
   
   const profile = getSubstanceProfile(drugName);
+
+  const calculateTimeToNextPhase = (timeSince) => {
+    let nextPhaseStart = 0;
+    let nextPhaseName = '';
+
+    if (timeSince < profile.onset.duration) {
+      nextPhaseStart = profile.onset.duration;
+      nextPhaseName = 'peak';
+    } else if (timeSince < (profile.onset.duration + profile.peak.duration)) {
+      nextPhaseStart = profile.onset.duration + profile.peak.duration;
+      nextPhaseName = 'duration';
+    } else if (timeSince < (profile.onset.duration + profile.peak.duration + profile.duration.duration)) {
+      nextPhaseStart = profile.onset.duration + profile.peak.duration + profile.duration.duration;
+      nextPhaseName = 'comedown';
+    } else if (timeSince < profile.total) {
+      nextPhaseStart = profile.total;
+      nextPhaseName = 'finished';
+    }
+
+    const minutesRemaining = nextPhaseStart - timeSince;
+    const totalSeconds = Math.max(0, Math.floor(minutesRemaining * 60));
+    
+    return {
+      hours: Math.floor(totalSeconds / 3600),
+      minutes: Math.floor((totalSeconds % 3600) / 60),
+      seconds: totalSeconds % 60,
+      nextPhase: nextPhaseName
+    };
+  };
 
   useEffect(() => {
     if (!lastDoseTime) return;
@@ -30,46 +61,20 @@ const DrugTimeline = ({ lastDoseTime, drugName }) => {
 
       setCurrentPhase(phase);
       setProgress(Math.min(100, (minutesSince / profile.total) * 100));
+      setTimeToNextPhase(calculateTimeToNextPhase(minutesSince));
     };
 
     updateTimeline();
-    const interval = setInterval(updateTimeline, 60000);
+    const interval = setInterval(updateTimeline, 1000);
     return () => clearInterval(interval);
   }, [lastDoseTime, profile]);
 
   if (!lastDoseTime) return null;
 
-  const formatDuration = (minutes) => {
-    const hrs = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
-  };
-
-  const getPhaseTime = (phase) => {
-    const doseTime = new Date(lastDoseTime);
-    let minutes = 0;
-    
-    switch (phase) {
-      case 'onset':
-        minutes = profile.onset.duration;
-        break;
-      case 'peak':
-        minutes = profile.onset.duration + profile.peak.duration;
-        break;
-      case 'duration':
-        minutes = profile.onset.duration + profile.peak.duration + profile.duration.duration;
-        break;
-      case 'comedown':
-        minutes = profile.total;
-        break;
-      default:
-        return '';
-    }
-
-    return new Date(doseTime.getTime() + minutes * 60000).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
+  const formatCountdown = (time) => {
+    if (!time) return '00:00:00';
+    const { hours, minutes, seconds } = time;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
   const phaseColors = {
@@ -80,40 +85,19 @@ const DrugTimeline = ({ lastDoseTime, drugName }) => {
     finished: 'bg-green-500'
   };
 
-  const phaseInfo = [
-    {
-      name: 'Onset',
-      phase: 'onset',
-      duration: profile.onset.duration,
-      intensity: profile.onset.intensity,
-      safety: profile.safetyInfo?.onset
-    },
-    {
-      name: 'Peak',
-      phase: 'peak',
-      duration: profile.peak.duration,
-      intensity: profile.peak.intensity,
-      safety: profile.safetyInfo?.peak
-    },
-    {
-      name: 'Duration',
-      phase: 'duration',
-      duration: profile.duration.duration,
-      intensity: profile.duration.intensity,
-      safety: profile.safetyInfo?.duration
-    }
-  ];
-
   return (
     <div className="space-y-4 bg-white rounded-lg border p-4">
-      <div className="flex items-center justify-between mb-2">
-        <h3 className="font-medium">Effect Timeline</h3>
-        <span className="text-sm text-gray-500">
-          {formatDuration(Math.floor((new Date() - new Date(lastDoseTime)) / 60000))} since dose
-        </span>
+      <div className="bg-blue-100 rounded-lg border-2 border-blue-300 p-4 mb-4">
+        <div className="text-center">
+          <h3 className="text-xl font-bold text-blue-900">Next Phase: {timeToNextPhase?.nextPhase || 'Complete'}</h3>
+          <div className="bg-white mt-2 p-3 rounded-lg border border-blue-300">
+            <div className="font-mono text-4xl font-bold text-blue-800">
+              {formatCountdown(timeToNextPhase)}
+            </div>
+          </div>
+        </div>
       </div>
 
-      {/* Progress bar */}
       <div className="space-y-1">
         <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
           <div 
@@ -121,43 +105,18 @@ const DrugTimeline = ({ lastDoseTime, drugName }) => {
             style={{ width: `${progress}%` }}
           />
         </div>
-        <div className="flex justify-between text-xs text-gray-500">
-          <span>Start {new Date(lastDoseTime).toLocaleTimeString([], { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })}</span>
-          <span>End {getPhaseTime('comedown')}</span>
-        </div>
       </div>
 
-      {/* Phase indicators */}
-      <div className="grid grid-cols-3 gap-2 text-sm">
-        {phaseInfo.map(({ name, phase, duration, intensity, safety }) => (
-          <div 
-            key={phase}
-            className={`p-3 rounded-lg border ${
-              currentPhase === phase 
-                ? `bg-${phase === 'onset' ? 'yellow' : phase === 'peak' ? 'red' : 'orange'}-50 
-                   border-${phase === 'onset' ? 'yellow' : phase === 'peak' ? 'red' : 'orange'}-200` 
-                : 'bg-gray-50 border-gray-200'
-            }`}
-          >
-            <div className="font-medium mb-1">{name}</div>
-            <div className="text-gray-500">{formatDuration(duration)}</div>
-            <div className="text-xs text-gray-400">{getPhaseTime(phase)}</div>
-            {currentPhase === phase && safety && (
-              <div className="mt-2 text-xs text-gray-600">{safety}</div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Current phase safety info */}
       {profile.safetyInfo?.[currentPhase] && (
-        <div className="mt-4 text-sm text-gray-600 bg-blue-50 border border-blue-200 rounded-lg p-3">
-          {profile.safetyInfo[currentPhase]}
+        <div className="mt-2 p-3 text-sm bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4 text-blue-500" />
+            <span>{profile.safetyInfo[currentPhase]}</span>
+          </div>
         </div>
       )}
     </div>
   );
 };
+
+export default DrugTimeline;

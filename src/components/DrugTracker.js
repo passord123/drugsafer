@@ -1,13 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Settings, AlertTriangle, PlusCircle, History, X, Package, AlertCircle } from 'lucide-react';
+import { Clock, Settings, AlertTriangle, PlusCircle, History, X, Package } from 'lucide-react';
 import DrugTimeline from './DrugTimeline';
 import { getSubstanceProfile } from './DrugTimer/timingProfiles';
-import { Alert, DoseWarningAlert, SafetyAlert, TimingAlert } from './DrugTimer/Alert';
+import { useNavigate } from 'react-router-dom';
+import { Alert } from './DrugTimer/Alert';
+import MobileModal from './layout/MobileModal';
+import DrugHistory from './DrugHistory';
+import PropTypes from 'prop-types';
+
 
 const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
   // Core state
+  const navigate = useNavigate();
   const [showSettings, setShowSettings] = useState(false);
-  const [isEditingDose, setIsEditingDose] = useState(false);
   const [customDosage, setCustomDosage] = useState('');
   const [alerts, setAlerts] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -15,6 +20,8 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
   const [overrideReason, setOverrideReason] = useState('');
   const [lastDoseTimer, setLastDoseTimer] = useState(null);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [showDoseModal, setShowDoseModal] = useState(false);
+  const [safetyChecks, setSafetyChecks] = useState(null);
 
   // Time tracking state
   const [selectedTime, setSelectedTime] = useState('now');
@@ -41,16 +48,10 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
 
   // Get the current standard dose
   const getStandardDose = () => {
-    if (drug.settings?.defaultDosage?.amount) {
-      return drug.settings.defaultDosage.amount;
-    }
-    if (drug.settings?.defaultDosage) {
-      return drug.settings.defaultDosage;
-    }
-    return drug.dosage || '';
+    return drug.settings?.defaultDosage?.amount || drug.settings?.defaultDosage || drug.dosage || '';
   };
 
-  // Timer update effect
+  // Effects
   useEffect(() => {
     if (drug.doses?.[0]) {
       const lastDoseTime = new Date(drug.doses[0].timestamp);
@@ -63,12 +64,10 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     }
   }, [drug.doses]);
 
-  // Set the correct standard dose when drug changes
   useEffect(() => {
     const standardDose = getStandardDose();
     setStandardDose(standardDose);
   }, [drug]);
-
   const addAlert = (type, message, duration = 5000) => {
     const id = Date.now();
     setAlerts(prev => [...prev, { id, type, message }]);
@@ -98,7 +97,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     setCustomDosage(standardDose);
     setCustomTime(formatDateTimeLocal(new Date()));
     setSelectedTime('now');
-    setIsEditingDose(true);
+    setShowDoseModal(true);
   };
 
   const checkSafetyRestrictions = (doseTime = new Date()) => {
@@ -120,104 +119,129 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     };
   };
 
+  const getDrugWithDoses = () => {
+    const drugs = JSON.parse(localStorage.getItem('drugs') || '[]');
+    return drugs.find(d => d.id === drug.id) || drug;
+  };
+
   const handleRecordDose = () => {
     const dosageNum = parseFloat(customDosage);
-  
+
     if (!customDosage || isNaN(dosageNum) || dosageNum <= 0) {
       addAlert('error', 'Please enter a valid dosage');
       return;
     }
-  
-    if (enableSupply && drug.settings?.currentSupply < dosageNum) {
-      addAlert('error', 'Insufficient supply for this dose');
-      return;
-    }
-  
-    let doseTime;
-    if (selectedTime === 'now') {
-      doseTime = new Date();
-    } else {
-      doseTime = new Date(customTime);
-      if (doseTime > new Date()) {
-        addAlert('error', 'Cannot record doses in the future');
-        return;
-      }
-    }
-  
-    const safetyChecks = checkSafetyRestrictions(doseTime);
-  
-    if (safetyChecks.hasTimeRestriction || safetyChecks.hasQuotaRestriction) {
-      setShowOverrideConfirm(true);
-      return;
-    }
-  
-    const newSupply = enableSupply
-      ? Math.max(0, (drug.settings.currentSupply || 0) - dosageNum)
-      : null;
-  
-    const doseData = {
+
+    const newDose = {
       id: Date.now(),
-      timestamp: doseTime.toISOString(),
+      timestamp: selectedTime === 'now' ? new Date().toISOString() : new Date(customTime).toISOString(),
       dosage: dosageNum,
-      status: calculateDoseStatus(
-        doseTime.toISOString(),
-        drug.doses?.[0]?.timestamp,
-        drug.settings?.minTimeBetweenDoses
-      )
+      status: 'normal'
     };
-  
-    onRecordDose(drug.id, doseData, newSupply);
-    setIsEditingDose(false);
+
+    // Get current drug data from localStorage
+    const drugs = JSON.parse(localStorage.getItem('drugs') || '[]');
+    const currentDrug = drugs.find(d => d.id === drug.id);
+
+    if (!currentDrug) {
+      addAlert('error', 'Drug not found');
+      return;
+    }
+
+    // Update drug with new dose
+    const updatedDrug = {
+      ...currentDrug,
+      doses: [newDose, ...(currentDrug.doses || [])],
+      settings: {
+        ...currentDrug.settings,
+        currentSupply: enableSupply
+          ? Math.max(0, (currentDrug.settings?.currentSupply || 0) - dosageNum)
+          : currentDrug.settings?.currentSupply
+      }
+    };
+
+    // Update localStorage
+    const updatedDrugs = drugs.map(d => d.id === drug.id ? updatedDrug : d);
+    localStorage.setItem('drugs', JSON.stringify(updatedDrugs));
+
+    // Update parent component
+    onRecordDose(drug.id, updatedDrug);
+
+    // Reset UI
+    setShowDoseModal(false);
     setCustomDosage('');
     setSelectedTime('now');
-  
-    if (enableSupply && newSupply <= 5 && newSupply > 0) {
-      addAlert('warning', `Low supply warning: ${newSupply} ${drug.dosageUnit} remaining`);
-    }
+
+    addAlert('success', 'Dose recorded successfully');
   };
-  
+
   const handleOverrideDose = () => {
+    if (!customDosage || !drug) return;
+
     const dosageNum = parseFloat(customDosage);
-  
+
     let doseTime;
     if (selectedTime === 'now') {
       doseTime = new Date();
     } else {
       doseTime = new Date(customTime);
     }
-  
+
     const newSupply = enableSupply
-      ? Math.max(0, (drug.settings.currentSupply || 0) - dosageNum)
+      ? Math.max(0, (drug.settings?.currentSupply || 0) - dosageNum)
       : null;
-  
+
+    // Create the dose data
     const doseData = {
       id: Date.now(),
       timestamp: doseTime.toISOString(),
       dosage: dosageNum,
       status: 'override',
-      overrideReason
+      overrideReason: overrideReason || 'Safety override'
     };
-  
-    onRecordDose(drug.id, doseData, newSupply);
-  
+
+    // Update the doses array
+    const updatedDoses = [...(drug.doses || []), doseData].sort((a, b) =>
+      new Date(b.timestamp) - new Date(a.timestamp)
+    );
+
+    // Update the drug with new doses array
+    const updatedDrug = {
+      ...drug,
+      doses: updatedDoses,
+      settings: {
+        ...drug.settings,
+        currentSupply: newSupply
+      }
+    };
+
+    // Log the override for record keeping
     const safetyChecks = checkSafetyRestrictions(doseTime);
     const overrideLog = {
       timestamp: doseTime.toISOString(),
+      drugId: drug.id,
+      drugName: drug.name,
       reason: overrideReason,
       timeSinceLastDose: safetyChecks.timeSinceLastDose,
       dosesToday: safetyChecks.dosesToday
     };
-  
+
+    // Store override log in localStorage
     const overrideLogs = JSON.parse(localStorage.getItem(`${drug.id}_overrides`) || '[]');
     overrideLogs.push(overrideLog);
     localStorage.setItem(`${drug.id}_overrides`, JSON.stringify(overrideLogs));
-  
-    setIsEditingDose(false);
+
+    // Record the dose with override
+    onRecordDose(drug.id, updatedDrug);
+
+    // Reset UI state
+    setShowDoseModal(false);
     setShowOverrideConfirm(false);
     setOverrideReason('');
     setCustomDosage('');
     setSelectedTime('now');
-  
+
+    // Show warning alert
     addAlert('warning', 'Dose recorded with safety override', 8000);
   };
 
@@ -276,7 +300,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     }
   };
 
-  // Format the time display
   const formatTime = (timestamp) => {
     try {
       const date = new Date(timestamp);
@@ -286,302 +309,16 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     }
   };
 
-  // Dialog Components
-  const OverrideDialog = () => {
-    if (!showOverrideConfirm) return null;
-
-    const safetyChecks = checkSafetyRestrictions(
-      selectedTime === 'now' ? new Date() : new Date(customTime)
-    );
-    const profile = getSubstanceProfile(drug.name);
-
+  const renderHistory = () => {
+    const currentDrug = getDrugWithDoses();
     return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
-        <div className="bg-white rounded-lg w-full max-w-md p-6 space-y-4">
-          <div className="flex items-start space-x-3">
-            <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0" />
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Safety Override</h3>
-              <p className="mt-2 text-gray-600">
-                {safetyChecks.hasTimeRestriction &&
-                  `Time since last dose: ${safetyChecks.timeSinceLastDose.toFixed(1)} hours`}
-                {safetyChecks.hasQuotaRestriction &&
-                  `Daily dose limit (${drug.settings.maxDailyDoses}) reached`}
-              </p>
-            </div>
-          </div>
-
-          <textarea
-            value={overrideReason}
-            onChange={(e) => setOverrideReason(e.target.value)}
-            placeholder="Please provide a reason for override (optional)"
-            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500"
-            rows={3}
-          />
-
-          <div className="space-y-2">
-            {drug.warnings && (
-              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-                {drug.warnings}
-              </div>
-            )}
-            {profile.safetyInfo?.peak && (
-              <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg text-sm text-yellow-700">
-                {profile.safetyInfo.peak}
-              </div>
-            )}
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={handleOverrideDose}
-              className="flex-1 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
-            >
-              Override Safety Check
-            </button>
-            <button
-              onClick={() => {
-                setShowOverrideConfirm(false);
-                setOverrideReason('');
-              }}
-              className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
+      <DrugHistory
+        doses={currentDrug.doses || []}
+        dosageUnit={currentDrug.settings?.defaultDosage?.unit || currentDrug.dosageUnit || 'mg'}
+      />
     );
   };
 
-  const ResetConfirmDialog = () => {
-    if (!showResetConfirm) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
-        <div className="bg-white rounded-lg w-full max-w-md p-6 space-y-4">
-          <div className="flex items-start space-x-3">
-            <AlertTriangle className="w-6 h-6 text-yellow-500 flex-shrink-0" />
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Reset Timer</h3>
-              <p className="mt-2 text-gray-600">
-                Are you sure you want to reset the timer? This will remove the last recorded dose.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-3">
-            <button
-              onClick={handleResetTimer}
-              className="flex-1 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600"
-            >Reset Timer
-            </button>
-            <button
-              onClick={() => setShowResetConfirm(false)}
-              className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  const SettingsDialog = () => {
-    if (!showSettings) return null;
-
-    return (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-[100] p-4">
-        <div className="bg-white rounded-lg w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
-          <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-medium text-gray-900">Drug Settings</h3>
-            <button
-              onClick={() => setShowSettings(false)}
-              className="p-2 hover:bg-gray-100 rounded-full"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          <div className="space-y-6">
-            {/* Timeline Toggle */}
-            <div className="space-y-2">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={showTimeline}
-                  onChange={(e) => setShowTimeline(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
-                />
-                <span className="text-sm font-medium text-gray-700">
-                  Show Effect Timeline
-                </span>
-              </label>
-              <p className="text-xs text-gray-500">
-                Displays visual timeline of drug effects and safety information
-              </p>
-            </div>
-
-            {/* Standard Dose Setting */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Standard Dose ({drug.dosageUnit})
-              </label>
-              <input
-                type="number"
-                value={standardDose}
-                onChange={(e) => setStandardDose(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                min="0"
-                step="any"
-              />
-            </div>
-
-            {/* Time Between Doses Setting */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Minimum Hours Between Doses
-              </label>
-              <input
-                type="number"
-                value={minTimeBetweenDoses}
-                onChange={(e) => setMinTimeBetweenDoses(Number(e.target.value))}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                min="0"
-                step="0.5"
-              />
-            </div>
-
-            {/* Max Daily Doses Setting */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Maximum Doses per Day
-              </label>
-              <input
-                type="number"
-                value={maxDailyDoses}
-                onChange={(e) => setMaxDailyDoses(Number(e.target.value))}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                min="1"
-              />
-            </div>
-
-            {/* Supply Management */}
-            <div className="space-y-4">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={enableSupply}
-                  onChange={(e) => setEnableSupply(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
-                />
-                <span className="text-sm font-medium text-gray-700">
-                  Track Supply
-                </span>
-              </label>
-
-              {enableSupply && (
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Current Supply ({drug.dosageUnit})
-                  </label>
-                  <input
-                    type="number"
-                    value={currentSupply}
-                    onChange={(e) => setCurrentSupply(Number(e.target.value))}
-                    className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                    min="0"
-                    step="any"
-                  />
-                </div>
-              )}
-            </div>
-
-            {/* Safety Information */}
-            {drug.warnings && (
-              <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
-                <div className="flex gap-2">
-                  <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
-                  <p className="text-sm text-red-700">{drug.warnings}</p>
-                </div>
-              </div>
-            )}
-
-            {/* Action Buttons */}
-            <div className="flex gap-3 pt-4 border-t">
-              <button
-                onClick={handleSaveSettings}
-                className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-              >
-                Save Settings
-              </button>
-              <button
-                onClick={() => setShowSettings(false)}
-                className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // History Display Component
-  const HistoryDisplay = () => {
-    if (!showHistory || !drug.doses || drug.doses.length === 0) return null;
-  
-    const formatDosage = (dose) => {
-      if (!dose.dosage && dose.dosage !== 0) return '0';
-      const dosageNum = parseFloat(dose.dosage);
-      return isNaN(dosageNum) ? '0' : dosageNum.toString();
-    };
-  
-    return (
-      <div className="bg-white rounded-lg border">
-        <div className="p-4 border-b">
-          <h3 className="font-medium">Dose History</h3>
-        </div>
-        <div className="divide-y max-h-60 overflow-y-auto">
-          {drug.doses.map((dose, index) => (
-            <div key={dose.id || index} className="p-4 flex flex-col gap-2">
-              <div className="flex justify-between items-start">
-                <div>
-                  <span className="font-medium">
-                    {formatDosage(dose)} {drug.dosageUnit}
-                  </span>
-                  {dose.status && (
-                    <div className="mt-1">
-                      <span className={getStatusClass(dose.status)}>
-                        {getStatusText(dose.status)}
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <span className="text-sm text-gray-500">
-                  {formatTime(dose.timestamp)}
-                </span>
-              </div>
-              {dose.overrideReason && (
-                <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded-lg">
-                  Override reason: {dose.overrideReason}
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-
-
-
-
-
-  
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -628,10 +365,13 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
 
       {/* Alerts */}
       {alerts.map(alert => (
-        <div key={alert.id} className={`p-4 rounded-lg border ${alert.type === 'error' ? 'bg-red-50 border-red-200 text-red-700' :
-          alert.type === 'warning' ? 'bg-yellow-50 border-yellow-200 text-yellow-700' :
-            'bg-blue-50 border-blue-200 text-blue-700'
-          }`}>
+        <div
+          key={alert.id}
+          className={`p-4 rounded-lg border ${alert.type === 'error' ? 'bg-red-50 border-red-200 text-red-700' :
+            alert.type === 'warning' ? 'bg-yellow-50 border-yellow-200 text-yellow-700' :
+              'bg-blue-50 border-blue-200 text-blue-700'
+            }`}
+        >
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5" />
             <span>{alert.message}</span>
@@ -648,100 +388,391 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
       )}
 
       {/* History Display */}
-      <HistoryDisplay />
-
-      {/* Record Dose UI */}
-      {isEditingDose ? (
-        <div className="fixed inset-x-0 bottom-0 bg-white border-t p-4 md:relative md:border-0 md:bg-transparent md:p-0">
-          <div className="flex flex-col gap-4 max-w-lg mx-auto">
-            {/* Dosage Input */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Dose Amount
-              </label>
-              <div className="relative">
-                <input
-                  type="number"
-                  value={customDosage}
-                  onChange={(e) => setCustomDosage(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-                <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
-                  {drug.dosageUnit}
-                </span>
-              </div>
-            </div>
-
-            {/* Time Selection */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Time Taken
-              </label>
-              <div className="flex gap-2">
-                <select
-                  value={selectedTime}
-                  onChange={(e) => setSelectedTime(e.target.value)}
-                  className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="now">Just now</option>
-                  <option value="custom">Custom time</option>
-                </select>
-                {selectedTime === 'custom' && (
-                  <input
-                    type="datetime-local"
-                    value={customTime}
-                    onChange={(e) => setCustomTime(e.target.value)}
-                    max={formatDateTimeLocal(new Date())}
-                    className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  />
-                )}
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="flex gap-2">
-              <button
-                onClick={handleRecordDose}
-                className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-              >
-                Record
-              </button>
-              <button
-                onClick={() => {
-                  setIsEditingDose(false);
-                  setCustomDosage('');
-                  setSelectedTime('now');
-                }}
-                className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      ) : (
-        <button
-          onClick={handleStartEditingDose}
-          className="w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 
-                   bg-blue-500 hover:bg-blue-600 text-white transition-colors"
-          disabled={enableSupply && drug.settings?.currentSupply <= 0}
+      {showHistory && (
+        <MobileModal
+          isOpen={showHistory}
+          onClose={() => setShowHistory(false)}
+          title="Dose History"
+          fullScreen
         >
-          <PlusCircle className="w-5 h-5" />
-          <span>
-            {enableSupply && drug.settings?.currentSupply <= 0
-              ? 'No Supply Available'
-              : 'Record New Dose'
-            }
-          </span>
-        </button>
+          {renderHistory()}
+        </MobileModal>
       )}
 
-      {/* Dialogs */}
-      <OverrideDialog />
-      <ResetConfirmDialog />
-      <SettingsDialog />
+      {/* Record Dose Button */}
+      <button
+        onClick={handleStartEditingDose}
+        className="w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 
+                 bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+        disabled={enableSupply && drug.settings?.currentSupply <= 0}
+      >
+        <PlusCircle className="w-5 h-5" />
+        <span>
+          {enableSupply && drug.settings?.currentSupply <= 0
+            ? 'No Supply Available'
+            : 'Record New Dose'
+          }
+        </span>
+      </button>
+      {/* Dose Recording Modal */}
+      <MobileModal
+        isOpen={showDoseModal}
+        onClose={() => {
+          setShowDoseModal(false);
+          setCustomDosage('');
+          setSelectedTime('now');
+        }}
+        title="Record Dose"
+        fullScreen
+      >
+        <div className="p-4 space-y-6">
+          {/* Dosage Input */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Dose Amount
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                value={customDosage}
+                onChange={(e) => setCustomDosage(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter amount"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+                {drug.dosageUnit}
+              </span>
+            </div>
+          </div>
+
+          {/* Time Selection */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Time Taken
+            </label>
+            <div className="flex gap-2">
+              <select
+                value={selectedTime}
+                onChange={(e) => setSelectedTime(e.target.value)}
+                className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="now">Just now</option>
+                <option value="custom">Custom time</option>
+              </select>
+              {selectedTime === 'custom' && (
+                <input
+                  type="datetime-local"
+                  value={customTime}
+                  onChange={(e) => setCustomTime(e.target.value)}
+                  max={formatDateTimeLocal(new Date())}
+                  className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Safety Warnings */}
+          {drug.warnings && (
+            <div className="bg-red-50 p-4 rounded-lg space-y-2">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+                <h3 className="font-medium text-red-900">Safety Warning</h3>
+              </div>
+              <p className="text-red-800">{drug.warnings}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="sticky bottom-0 bg-white border-t p-4 flex gap-2">
+          <button
+            onClick={handleRecordDose}
+            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          >
+            Record
+          </button>
+          <button
+            onClick={() => {
+              setShowDoseModal(false);
+              setCustomDosage('');
+              setSelectedTime('now');
+            }}
+            className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+          >
+            Cancel
+          </button>
+        </div>
+      </MobileModal>
+
+      {/* Safety Override Modal */}
+      <MobileModal
+        isOpen={showOverrideConfirm}
+        onClose={() => {
+          setShowOverrideConfirm(false);
+          setOverrideReason('');
+        }}
+        title="Safety Override"
+        fullScreen
+      >
+        <div className="p-4 space-y-4">
+          <div className="flex items-start space-x-3">
+            <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0" />
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Safety Override Required</h3>
+              <p className="mt-2 text-gray-600">
+                {safetyChecks?.hasTimeRestriction &&
+                  `Time since last dose: ${safetyChecks.timeSinceLastDose.toFixed(1)} hours`}
+                {safetyChecks?.hasQuotaRestriction &&
+                  `Daily dose limit (${drug.settings.maxDailyDoses}) reached`}
+              </p>
+            </div>
+          </div>
+
+          <textarea
+            value={overrideReason}
+            onChange={(e) => setOverrideReason(e.target.value)}
+            placeholder="Please provide a reason for override (optional)"
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500"
+            rows={3}
+          />
+
+          {drug.warnings && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+              {drug.warnings}
+            </div>
+          )}
+
+          <div className="sticky bottom-0 bg-white pt-4 flex gap-3">
+            <button
+              onClick={handleOverrideDose}
+              className="flex-1 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
+            >
+              Override Safety Check
+            </button>
+            <button
+              onClick={() => {
+                setShowOverrideConfirm(false);
+                setOverrideReason('');
+              }}
+              className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </MobileModal>
+
+      {/* Settings Modal */}
+      <MobileModal
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        title="Drug Settings"
+        fullScreen
+      >
+        <div className="p-4 space-y-6">
+          {/* Timeline Toggle */}
+          <div className="space-y-2">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={showTimeline}
+                onChange={(e) => setShowTimeline(e.target.checked)}
+                className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Show Effect Timeline
+              </span>
+            </label>
+            <p className="text-xs text-gray-500">
+              Displays visual timeline of drug effects and safety information
+            </p>
+          </div>
+
+          {/* Standard Dose Setting */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Standard Dose ({drug.dosageUnit})
+            </label>
+            <input
+              type="number"
+              value={standardDose}
+              onChange={(e) => setStandardDose(e.target.value)}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              min="0"
+              step="any"
+            />
+          </div>
+
+          {/* Time Between Doses Setting */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Minimum Hours Between Doses
+            </label>
+            <input
+              type="number"
+              value={minTimeBetweenDoses}
+              onChange={(e) => setMinTimeBetweenDoses(Number(e.target.value))}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              min="0"
+              step="0.5"
+            />
+          </div>
+
+          {/* Max Daily Doses Setting */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Maximum Doses per Day
+            </label>
+            <input
+              type="number"
+              value={maxDailyDoses}
+              onChange={(e) => setMaxDailyDoses(Number(e.target.value))}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              min="1"
+            />
+          </div>
+
+          {/* Supply Management */}
+          <div className="space-y-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={enableSupply}
+                onChange={(e) => setEnableSupply(e.target.checked)}
+                className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Track Supply
+              </span>
+            </label>
+
+            {enableSupply && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Current Supply ({drug.dosageUnit})
+                </label>
+                <input
+                  type="number"
+                  value={currentSupply}
+                  onChange={(e) => setCurrentSupply(Number(e.target.value))}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  min="0"
+                  step="any"
+                />
+              </div>
+            )}
+          </div>
+
+          {/* Safety Information */}
+          {drug.warnings && (
+            <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+              <div className="flex gap-2">
+                <AlertTriangle className="w-5 h-5 text-red-500 flex-shrink-0" />
+                <p className="text-sm text-red-700">{drug.warnings}</p>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="sticky bottom-0 bg-white border-t p-4 flex gap-3">
+          <button
+            onClick={handleSaveSettings}
+            className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+          >
+            Save Settings
+          </button>
+          <button
+            onClick={() => setShowSettings(false)}
+            className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
+          >
+            Cancel
+          </button>
+        </div>
+      </MobileModal>
+
+      {/* Reset Timer Modal */}
+      <MobileModal
+        isOpen={showResetConfirm}
+        onClose={() => setShowResetConfirm(false)}
+        title="Reset Timer"
+        fullScreen
+      >
+        <div className="p-4 space-y-4">
+          <div className="flex items-start space-x-3">
+            <AlertTriangle className="w-6 h-6 text-yellow-500 flex-shrink-0" />
+            <div>
+              <h3 className="text-lg font-semibold text-gray-900">Reset Timer</h3>
+              <p className="mt-2 text-gray-600">
+                Are you sure you want to reset the timer? This will remove the last recorded dose.
+              </p>
+            </div>
+          </div>
+
+          <div className="sticky bottom-0 bg-white pt-4 flex gap-3">
+            <button
+              onClick={handleResetTimer}
+              className="flex-1 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600"
+            >
+              Reset Timer
+            </button>
+            <button
+              onClick={() => setShowResetConfirm(false)}
+              className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      </MobileModal>
     </div>
   );
+}
+
+DrugTracker.propTypes = {
+  drug: PropTypes.shape({
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    name: PropTypes.string.isRequired,
+    dosage: PropTypes.string,
+    dosageUnit: PropTypes.string,
+    warnings: PropTypes.string,
+    doses: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        timestamp: PropTypes.string,
+        dosage: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        status: PropTypes.string,
+        overrideReason: PropTypes.string
+      })
+    ),
+    settings: PropTypes.shape({
+      defaultDosage: PropTypes.oneOfType([
+        PropTypes.string,
+        PropTypes.number,
+        PropTypes.shape({
+          amount: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+          unit: PropTypes.string
+        })
+      ]),
+      maxDailyDoses: PropTypes.number,
+      minTimeBetweenDoses: PropTypes.number,
+      trackSupply: PropTypes.bool,
+      currentSupply: PropTypes.number,
+      showTimeline: PropTypes.bool
+    })
+  }).isRequired,
+  onRecordDose: PropTypes.func.isRequired,
+  onUpdateSettings: PropTypes.func.isRequired
 };
 
-export default DrugTracker;
+DrugTracker.defaultProps = {
+  drug: {
+    doses: [],
+    settings: {
+      maxDailyDoses: 4,
+      minTimeBetweenDoses: 4,
+      trackSupply: false,
+      showTimeline: true
+    }
+  }
+};
+
+export default DrugTracker; 
