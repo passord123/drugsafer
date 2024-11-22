@@ -59,23 +59,19 @@ const DrugListPage = () => {
     }
   };
 
-  const handleRecordDose = (drugId, dose, newSupply) => {
+  const handleRecordDose = (drugId, doseData, newSupply) => {
     const updatedDrugs = drugs.map(drug => {
       if (drug.id === drugId) {
         const newDose = {
-          id: Date.now(),
-          timestamp: new Date().toISOString(),
-          dosage: dose,
-          status: calculateDoseStatus(
-            new Date().toISOString(),
-            drug.doses?.[0]?.timestamp,
-            drug.settings?.minTimeBetweenDoses
-          )
+          id: doseData.id,
+          timestamp: doseData.timestamp,
+          dosage: doseData.dosage,  // Using the dosage from the doseData object
+          status: doseData.status
         };
-
+  
         return {
           ...drug,
-          doses: [newDose, ...(drug.doses || [])].sort((a, b) => 
+          doses: [newDose, ...(drug.doses || [])].sort((a, b) =>
             new Date(b.timestamp) - new Date(a.timestamp)
           ),
           settings: {
@@ -86,10 +82,10 @@ const DrugListPage = () => {
       }
       return drug;
     });
-
+  
     setDrugs(updatedDrugs);
     localStorage.setItem('drugs', JSON.stringify(updatedDrugs));
-
+  
     if (selectedDrug?.id === drugId) {
       const updatedSelectedDrug = updatedDrugs.find(d => d.id === drugId);
       setSelectedDrug(updatedSelectedDrug);
@@ -107,7 +103,7 @@ const DrugListPage = () => {
   };
 
   const filteredDrugs = drugs.filter(drug =>
-    drug.name.toLowerCase().includes(searchQuery.toLowerCase())
+    drug.name?.toLowerCase().includes(searchQuery.toLowerCase() || '')
   );
 
   return (
@@ -162,7 +158,7 @@ const DrugListPage = () => {
 
           {selectedDrug && drugs.length > 1 && (
             <div className="bg-white rounded-xl shadow-sm p-6">
-              <InteractionChecker 
+              <InteractionChecker
                 currentMedication={selectedDrug}
                 allMedications={drugs}
               />

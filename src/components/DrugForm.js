@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Search, X, AlertCircle } from 'lucide-react';
+import { useAlerts } from '../contexts/AlertContext';
 import MobileModal from './layout/MobileModal';
 
 const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
@@ -12,11 +13,11 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
   const [waitingPeriod, setWaitingPeriod] = useState(4);
   const [maxDailyDoses, setMaxDailyDoses] = useState(4);
   const [initialSupply, setInitialSupply] = useState('0');
-  const [features, setFeatures] = useState({
-    supplyManagement: true,
-    dailyLimits: true,
-    timingRestrictions: true
-  });
+  const [formErrors, setFormErrors] = useState({});
+  const [enableSupply, setEnableSupply] = useState(true);
+  const [currentSupply, setCurrentSupply] = useState('0');
+  
+  const { addAlert } = useAlerts();
 
   const categories = useMemo(() => {
     const uniqueCats = new Set(defaultDrugs.map(drug => drug.category));
@@ -32,6 +33,40 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
     });
   }, [defaultDrugs, searchQuery, selectedCategory]);
 
+  const validateDrugForm = (values) => {
+    const errors = {};
+
+    if (!values.customDosage) {
+      errors.dosage = 'Dosage is required';
+    } else if (parseFloat(values.customDosage) <= 0) {
+      errors.dosage = 'Dosage must be greater than 0';
+    } else if (parseFloat(values.customDosage) > 1000) {
+      errors.dosage = 'Dosage seems unusually high, please verify';
+    }
+
+    if (!values.waitingPeriod) {
+      errors.waitingPeriod = 'Waiting period is required';
+    } else if (parseFloat(values.waitingPeriod) < 0) {
+      errors.waitingPeriod = 'Waiting period cannot be negative';
+    }
+
+    if (!values.maxDailyDoses) {
+      errors.maxDailyDoses = 'Maximum daily doses is required';
+    } else if (parseInt(values.maxDailyDoses) <= 0) {
+      errors.maxDailyDoses = 'Maximum daily doses must be at least 1';
+    }
+
+    if (enableSupply) {
+      if (values.currentSupply === '') {
+        errors.currentSupply = 'Current supply is required when supply tracking is enabled';
+      } else if (parseFloat(values.currentSupply) < 0) {
+        errors.currentSupply = 'Supply cannot be negative';
+      }
+    }
+
+    return errors;
+  };
+
   const handleDrugSelect = (drug) => {
     setSelectedDrug(drug);
     setCustomDosage(drug.settings?.defaultDosage || drug.dosage?.split(' ')[0] || '');
@@ -42,10 +77,23 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
   };
 
   const handleAddDrug = () => {
-    if (!customDosage || customDosage <= 0) {
-      alert('Please enter a valid dosage amount');
+    const values = {
+      customDosage,
+      waitingPeriod,
+      maxDailyDoses,
+      enableSupply,
+      currentSupply
+    };
+
+    const errors = validateDrugForm(values);
+    
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      addAlert('error', Object.values(errors)[0]);
       return;
     }
+
+    setFormErrors({});
 
     onAdd({
       ...selectedDrug,
@@ -57,13 +105,17 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
           amount: customDosage,
           unit: dosageUnit
         },
-        features,
+        features: {
+          supplyManagement: enableSupply,
+          dailyLimits: true,
+          timingRestrictions: true
+        },
         minTimeBetweenDoses: Number(waitingPeriod),
         maxDailyDoses: Number(maxDailyDoses),
-        currentSupply: Number(initialSupply)
+        currentSupply: enableSupply ? Number(currentSupply) : null
       }
     });
-    setShowDrugDetails(false);
+
     resetForm();
   };
 
@@ -86,6 +138,10 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
     setMaxDailyDoses(4);
     setInitialSupply('0');
     setSearchQuery('');
+    setShowDrugDetails(false);
+    setFormErrors({});
+    setEnableSupply(true);
+    setCurrentSupply('0');
   };
 
   return (
@@ -217,6 +273,9 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
                   <option value="tablets">tablets</option>
                 </select>
               </div>
+              {formErrors.dosage && (
+                <p className="text-sm text-red-600">{formErrors.dosage}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -232,6 +291,9 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
                 step="0.5"
                 placeholder="Minimum hours between doses"
               />
+              {formErrors.waitingPeriod && (
+                <p className="text-sm text-red-600">{formErrors.waitingPeriod}</p>
+              )}
             </div>
 
             <div className="space-y-2">
@@ -246,20 +308,37 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
                 min="1"
                 placeholder="Maximum doses per day"
               />
+              {formErrors.maxDailyDoses && (
+                <p className="text-sm text-red-600">{formErrors.maxDailyDoses}</p>
+              )}
             </div>
 
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Initial Supply
+              <label className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  checked={enableSupply}
+                  onChange={(e) => setEnableSupply(e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-sm font-medium text-gray-700">Track Supply</span>
               </label>
-              <input
-                type="number"
-                value={initialSupply}
-                onChange={(e) => setInitialSupply(e.target.value)}
-                className="w-full input-primary"
-                min="0"
-                placeholder="Starting amount"
-              />
+
+              {enableSupply && (
+                <div className="mt-2">
+                  <input
+                    type="number"
+                    value={currentSupply}
+                    onChange={(e) => setCurrentSupply(e.target.value)}
+                    className="w-full input-primary"
+                    min="0"
+                    placeholder="Initial supply amount"
+                  />
+                  {formErrors.currentSupply && (
+                    <p className="text-sm text-red-600">{formErrors.currentSupply}</p>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 
