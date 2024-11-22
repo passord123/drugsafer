@@ -1,6 +1,6 @@
 // src/App.js
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation  } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { AlertProvider } from './contexts/AlertContext/AlertProvider';
 
 // Import pages
@@ -50,7 +50,7 @@ const App = () => {
                     <span className="text-xl font-bold text-gray-900">DrugSafe</span>
                   </Link>
                 </div>
-    
+
                 <div className="flex items-center space-x-2">
                   <NavLink to="/" icon={Home}>Home</NavLink>
                   <NavLink to="/drugs" icon={List}>My Drugs</NavLink>
@@ -63,14 +63,18 @@ const App = () => {
 
           {/* Main Content */}
           <main className="min-h-[calc(100vh-8rem)]">
-            <MobileOptimizedLayout>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/drugs" element={<DrugListPage />} />
-                <Route path="/add" element={<AddDrugPage />} />
-                <Route path="/stats" element={<MedicationStats />} />
-              </Routes>
-            </MobileOptimizedLayout>
+            <Router>
+              <div className="min-h-screen bg-gray-50">
+                <MobileOptimizedLayout>
+                  <Routes>
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/drugs" element={<DrugListPage />} />
+                    <Route path="/add" element={<AddDrugPage />} />
+                    <Route path="/stats" element={<MedicationStats />} />
+                  </Routes>
+                </MobileOptimizedLayout>
+              </div>
+            </Router>
           </main>
 
           {/* Footer */}

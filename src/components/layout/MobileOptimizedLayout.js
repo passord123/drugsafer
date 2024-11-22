@@ -14,7 +14,7 @@ const MobileOptimizedLayout = ({ children }) => {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <>
       {/* Mobile Header */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b z-50">
         <div className="px-4 h-full flex items-center justify-between">
@@ -24,7 +24,7 @@ const MobileOptimizedLayout = ({ children }) => {
           </Link>
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-2 hover:bg-gray-100 rounded-lg lg:hidden"
+            className="p-2 hover:bg-gray-100 rounded-lg"
           >
             {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -54,6 +54,11 @@ const MobileOptimizedLayout = ({ children }) => {
         </div>
       )}
 
+      {/* Main Content */}
+      <main className="pt-16 pb-16 min-h-screen bg-gray-50">
+        {children}
+      </main>
+
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-40">
         <div className="grid grid-cols-4 h-16">
@@ -71,12 +76,7 @@ const MobileOptimizedLayout = ({ children }) => {
           ))}
         </div>
       </nav>
-
-      {/* Main Content */}
-      <main className="pt-16 pb-16 min-h-screen bg-gray-50">
-        {children}
-      </main>
-    </div>
+    </>
   );
 };
 
