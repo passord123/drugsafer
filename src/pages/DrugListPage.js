@@ -127,14 +127,14 @@ const DrugListPage = () => {
             )}
           </div>
 
-          {selectedDrug && drugs.length > 1 && (
+          {/* {selectedDrug && drugs.length > 1 && (
             <div className="bg-white rounded-xl shadow-sm p-6">
               <InteractionChecker
                 currentMedication={selectedDrug}
                 allMedications={drugs}
               />
             </div>
-          )}
+          )} */}
         </div>
 
         {selectedDrug && (
