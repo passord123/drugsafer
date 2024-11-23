@@ -133,7 +133,10 @@ const DrugListPage = () => {
         </div>
 
         {selectedDrug && (
-          <ScrollIntoView active={Boolean(selectedDrug)}>
+          <ScrollIntoView
+            active={Boolean(selectedDrug)}
+            dependency={selectedDrug.id} // Add this line
+          >
             <div className="bg-white rounded-xl shadow-sm">
               <DrugTracker
                 drug={selectedDrug}
