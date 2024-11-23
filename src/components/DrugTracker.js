@@ -9,7 +9,7 @@ import DrugHistory from './DrugHistory';
 import PropTypes from 'prop-types';
 import { getDrugTiming, calculateNextDoseTime, checkDoseSafety } from '../utils/drugTimingHandler';
 import { useAlerts } from '../contexts/AlertContext';
-
+import { timingProfiles, categoryProfiles } from './DrugTimer/timingProfiles';
 
 const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
   // Core state
@@ -34,12 +34,47 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
   const [maxDailyDoses, setMaxDailyDoses] = useState(drug.settings?.maxDailyDoses || 4);
   const [enableSupply, setEnableSupply] = useState(drug.settings?.trackSupply || false);
   const [currentSupply, setCurrentSupply] = useState(drug.settings?.currentSupply || 0);
-  const [minTimeBetweenDoses, setMinTimeBetweenDoses] = useState(
-    drug.settings?.minTimeBetweenDoses || 4
-  );
   const [showTimeline, setShowTimeline] = useState(
     drug.settings?.showTimeline !== undefined ? drug.settings.showTimeline : true
   );
+
+  // Timing profile state
+  const [useRecommendedTiming, setUseRecommendedTiming] = useState(true);
+  const [minTimeBetweenDoses, setMinTimeBetweenDoses] = useState(
+    drug.settings?.minTimeBetweenDoses || getDefaultTiming()
+  );
+
+  // Get timing from profile
+  function getDefaultTiming() {
+    const profile = timingProfiles[drug.name.toLowerCase()] ||
+      categoryProfiles[drug.category] ||
+      timingProfiles.default;
+    return profile.total() / 60; // Convert minutes to hours
+  }
+
+  // Format duration for display
+  function formatDuration(minutes) {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = Math.round(minutes % 60);
+
+    if (hours === 0) return `${remainingMinutes}m`;
+    if (remainingMinutes === 0) return `${hours}h`;
+    return `${hours}h ${remainingMinutes}m`;
+  }
+
+  // Get the timing profile for the current drug
+  const getTimingProfile = () => {
+    return timingProfiles[drug.name.toLowerCase()] ||
+      categoryProfiles[drug.category] ||
+      timingProfiles.default;
+  };
+
+  // Get formatted total duration
+  const getTotalDuration = () => {
+    const profile = getTimingProfile();
+    const totalMinutes = profile.total();
+    return formatDuration(totalMinutes);
+  };
 
   // Helper function to format date for input
   const formatDateTimeLocal = (date) => {
@@ -47,12 +82,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
       .toISOString()
       .slice(0, 16);
   };
-
-  // Get the current standard dose
-  const getStandardDose = () => {
-    return drug.settings?.defaultDosage?.amount || drug.settings?.defaultDosage || drug.dosage || '';
-  };
-
   // Effects
   useEffect(() => {
     if (drug.doses?.[0]) {
@@ -70,6 +99,8 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     const standardDose = getStandardDose();
     setStandardDose(standardDose);
   }, [drug]);
+
+  // Alert handling
   const addAlert = (type, message, duration = 5000) => {
     const id = Date.now();
     setAlerts(prev => [...prev, { id, type, message }]);
@@ -79,16 +110,21 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
   };
 
   const handleSaveSettings = () => {
+    const profile = getTimingProfile();
+    const totalMinutes = profile.total();
+
     const updatedSettings = {
       ...drug.settings,
       defaultDosage: standardDose,
       defaultDosageUnit: drug.dosageUnit,
       maxDailyDoses: Number(maxDailyDoses),
-      minTimeBetweenDoses: Number(minTimeBetweenDoses),
+      minTimeBetweenDoses: useRecommendedTiming ? totalMinutes / 60 : Number(minTimeBetweenDoses),
       trackSupply: enableSupply,
       currentSupply: enableSupply ? Number(currentSupply) : null,
-      showTimeline: showTimeline
+      showTimeline: showTimeline,
+      useRecommendedTiming
     };
+
     onUpdateSettings(drug.id, updatedSettings);
     setShowSettings(false);
     addAlert('info', 'Settings updated successfully');
@@ -113,17 +149,16 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
       ? (doseTime - new Date(lastDose)) / (1000 * 60 * 60)
       : Infinity;
 
+    const profile = getTimingProfile();
+    const recommendedHours = profile.total() / 60;
+
     return {
-      hasTimeRestriction: timeSinceLastDose < drug.settings.minTimeBetweenDoses,
+      hasTimeRestriction: timeSinceLastDose < (useRecommendedTiming ? recommendedHours : drug.settings.minTimeBetweenDoses),
       hasQuotaRestriction: dosesToday >= drug.settings.maxDailyDoses,
       timeSinceLastDose,
-      dosesToday
+      dosesToday,
+      recommendedWaitTime: recommendedHours
     };
-  };
-
-  const getDrugWithDoses = () => {
-    const drugs = JSON.parse(localStorage.getItem('drugs') || '[]');
-    return drugs.find(d => d.id === drug.id) || drug;
   };
 
   const handleRecordDose = () => {
@@ -134,9 +169,24 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
       return;
     }
 
+    let doseTime;
+    if (selectedTime === 'now') {
+      doseTime = new Date();
+    } else {
+      doseTime = new Date(customTime);
+    }
+
+    // Safety check
+    const safetyCheck = checkSafetyRestrictions(doseTime);
+    if (safetyCheck.hasTimeRestriction || safetyCheck.hasQuotaRestriction) {
+      setSafetyChecks(safetyCheck);
+      setShowOverrideConfirm(true);
+      return;
+    }
+
     const newDose = {
       id: Date.now(),
-      timestamp: selectedTime === 'now' ? new Date().toISOString() : new Date(customTime).toISOString(),
+      timestamp: doseTime.toISOString(),
       dosage: dosageNum,
       status: 'normal'
     };
@@ -176,7 +226,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
 
     addAlert('success', 'Dose recorded successfully');
   };
-
   const handleOverrideDose = () => {
     if (!customDosage || !drug) return;
 
@@ -203,9 +252,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     };
 
     // Update the doses array
-    const updatedDoses = [...(drug.doses || []), doseData].sort((a, b) =>
-      new Date(b.timestamp) - new Date(a.timestamp)
-    );
+    const updatedDoses = [doseData, ...(drug.doses || [])];
 
     // Update the drug with new doses array
     const updatedDrug = {
@@ -261,54 +308,16 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     addAlert('info', 'Timer has been reset');
   };
 
-  const calculateDoseStatus = (doseTime, previousDoseTime, minTimeBetweenDoses) => {
-    if (!previousDoseTime) return 'normal';
-    const doseDate = new Date(doseTime);
-    const prevDose = new Date(previousDoseTime);
-    const hoursBetween = (doseDate - prevDose) / (1000 * 60 * 60);
-    if (hoursBetween < minTimeBetweenDoses / 2) return 'early';
-    if (hoursBetween < minTimeBetweenDoses) return 'warning';
-    return 'normal';
+  // Helper functions
+  const getStandardDose = () => {
+    return drug.settings?.defaultDosage?.amount ||
+      drug.settings?.defaultDosage ||
+      drug.dosage || '';
   };
 
-  const getStatusClass = (status) => {
-    const baseClasses = 'inline-flex items-center px-2 py-1 rounded-full text-xs font-medium';
-    switch (status) {
-      case 'normal':
-        return `${baseClasses} bg-green-100 text-green-800`;
-      case 'warning':
-        return `${baseClasses} bg-yellow-100 text-yellow-800`;
-      case 'early':
-        return `${baseClasses} bg-red-100 text-red-800`;
-      case 'override':
-        return `${baseClasses} bg-purple-100 text-purple-800`;
-      default:
-        return `${baseClasses} bg-gray-100 text-gray-800`;
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case 'normal':
-        return 'Normal';
-      case 'warning':
-        return 'Warning';
-      case 'early':
-        return 'Early';
-      case 'override':
-        return 'Override';
-      default:
-        return 'Unknown';
-    }
-  };
-
-  const formatTime = (timestamp) => {
-    try {
-      const date = new Date(timestamp);
-      return date.toLocaleString();
-    } catch (e) {
-      return 'Invalid date';
-    }
+  const getDrugWithDoses = () => {
+    const drugs = JSON.parse(localStorage.getItem('drugs') || '[]');
+    return drugs.find(d => d.id === drug.id) || drug;
   };
 
   const renderHistory = () => {
@@ -320,7 +329,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
       />
     );
   };
-
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -389,181 +397,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
         />
       )}
 
-      {/* History Display */}
-      {showHistory && (
-        <MobileModal
-          isOpen={showHistory}
-          onClose={() => setShowHistory(false)}
-          title="Dose History"
-          fullScreen
-        >
-          {renderHistory()}
-        </MobileModal>
-      )}
-
-      {/* Record Dose Button */}
-      <button
-        onClick={handleStartEditingDose}
-        className="w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 
-                 bg-blue-500 hover:bg-blue-600 text-white transition-colors"
-        disabled={enableSupply && drug.settings?.currentSupply <= 0}
-      >
-        <PlusCircle className="w-5 h-5" />
-        <span>
-          {enableSupply && drug.settings?.currentSupply <= 0
-            ? 'No Supply Available'
-            : 'Record New Dose'
-          }
-        </span>
-      </button>
-      {/* Dose Recording Modal */}
-      <MobileModal
-        isOpen={showDoseModal}
-        onClose={() => {
-          setShowDoseModal(false);
-          setCustomDosage('');
-          setSelectedTime('now');
-        }}
-        title="Record Dose"
-        fullScreen
-      >
-        <div className="p-4 space-y-6">
-          {/* Dosage Input */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Dose Amount
-            </label>
-            <div className="relative">
-              <input
-                type="number"
-                value={customDosage}
-                onChange={(e) => setCustomDosage(e.target.value)}
-                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter amount"
-              />
-              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
-                {drug.dosageUnit}
-              </span>
-            </div>
-          </div>
-
-          {/* Time Selection */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Time Taken
-            </label>
-            <div className="flex gap-2">
-              <select
-                value={selectedTime}
-                onChange={(e) => setSelectedTime(e.target.value)}
-                className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="now">Just now</option>
-                <option value="custom">Custom time</option>
-              </select>
-              {selectedTime === 'custom' && (
-                <input
-                  type="datetime-local"
-                  value={customTime}
-                  onChange={(e) => setCustomTime(e.target.value)}
-                  max={formatDateTimeLocal(new Date())}
-                  className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
-              )}
-            </div>
-          </div>
-
-          {/* Safety Warnings */}
-          {drug.warnings && (
-            <div className="bg-red-50 p-4 rounded-lg space-y-2">
-              <div className="flex items-center gap-2">
-                <AlertTriangle className="w-5 h-5 text-red-500" />
-                <h3 className="font-medium text-red-900">Safety Warning</h3>
-              </div>
-              <p className="text-red-800">{drug.warnings}</p>
-            </div>
-          )}
-        </div>
-
-        <div className="sticky bottom-0 bg-white border-t p-4 flex gap-2">
-          <button
-            onClick={handleRecordDose}
-            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-          >
-            Record
-          </button>
-          <button
-            onClick={() => {
-              setShowDoseModal(false);
-              setCustomDosage('');
-              setSelectedTime('now');
-            }}
-            className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-          >
-            Cancel
-          </button>
-        </div>
-      </MobileModal>
-
-      {/* Safety Override Modal */}
-      <MobileModal
-        isOpen={showOverrideConfirm}
-        onClose={() => {
-          setShowOverrideConfirm(false);
-          setOverrideReason('');
-        }}
-        title="Safety Override"
-        fullScreen
-      >
-        <div className="p-4 space-y-4">
-          <div className="flex items-start space-x-3">
-            <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0" />
-            <div>
-              <h3 className="text-lg font-semibold text-gray-900">Safety Override Required</h3>
-              <p className="mt-2 text-gray-600">
-                {safetyChecks?.hasTimeRestriction &&
-                  `Time since last dose: ${safetyChecks.timeSinceLastDose.toFixed(1)} hours`}
-                {safetyChecks?.hasQuotaRestriction &&
-                  `Daily dose limit (${drug.settings.maxDailyDoses}) reached`}
-              </p>
-            </div>
-          </div>
-
-          <textarea
-            value={overrideReason}
-            onChange={(e) => setOverrideReason(e.target.value)}
-            placeholder="Please provide a reason for override (optional)"
-            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500"
-            rows={3}
-          />
-
-          {drug.warnings && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
-              {drug.warnings}
-            </div>
-          )}
-
-          <div className="sticky bottom-0 bg-white pt-4 flex gap-3">
-            <button
-              onClick={handleOverrideDose}
-              className="flex-1 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600"
-            >
-              Override Safety Check
-            </button>
-            <button
-              onClick={() => {
-                setShowOverrideConfirm(false);
-                setOverrideReason('');
-              }}
-              className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      </MobileModal>
-
-      {/* Settings Modal */}
+      {/* Modals */}
       <MobileModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
@@ -584,9 +418,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
                 Show Effect Timeline
               </span>
             </label>
-            <p className="text-xs text-gray-500">
-              Displays visual timeline of drug effects and safety information
-            </p>
           </div>
 
           {/* Standard Dose Setting */}
@@ -604,19 +435,44 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
             />
           </div>
 
-          {/* Time Between Doses Setting */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Minimum Hours Between Doses
+          {/* Timing Settings */}
+          <div className="space-y-4">
+            <label className="flex items-center gap-2">
+              <input
+                type="checkbox"
+                checked={useRecommendedTiming}
+                onChange={(e) => setUseRecommendedTiming(e.target.checked)}
+                className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Use Recommended Timing
+              </span>
             </label>
-            <input
-              type="number"
-              value={minTimeBetweenDoses}
-              onChange={(e) => setMinTimeBetweenDoses(Number(e.target.value))}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              min="0"
-              step="0.5"
-            />
+
+            {useRecommendedTiming ? (
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <p className="text-sm text-blue-800">
+                  Recommended time between doses: {getTotalDuration()}
+                </p>
+                <p className="text-sm text-blue-800 mt-2">
+                  Based on {drug.name}'s effect profile
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Custom Time Between Doses (hours)
+                </label>
+                <input
+                  type="number"
+                  value={minTimeBetweenDoses}
+                  onChange={(e) => setMinTimeBetweenDoses(Number(e.target.value))}
+                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                  min="0"
+                  step="0.5"
+                />
+              </div>
+            )}
           </div>
 
           {/* Max Daily Doses Setting */}
@@ -691,33 +547,157 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
         </div>
       </MobileModal>
 
-      {/* Reset Timer Modal */}
+      {/* Dose Recording Modal */}
       <MobileModal
-        isOpen={showResetConfirm}
-        onClose={() => setShowResetConfirm(false)}
-        title="Reset Timer"
+        isOpen={showDoseModal}
+        onClose={() => {
+          setShowDoseModal(false);
+          setCustomDosage('');
+          setSelectedTime('now');
+        }}
+        title="Record Dose"
+        fullScreen
+      >
+        <div className="p-4 space-y-6">
+          {/* Dosage Input */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Dose Amount
+            </label>
+            <div className="relative">
+              <input
+                type="number"
+                value={customDosage}
+                onChange={(e) => setCustomDosage(e.target.value)}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter amount"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500">
+                {drug.dosageUnit}
+              </span>
+            </div>
+          </div>
+
+          {/* Time Selection */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Time Taken
+            </label>
+            <div className="flex gap-2">
+              <select
+                value={selectedTime}
+                onChange={(e) => setSelectedTime(e.target.value)}
+                className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="now">Just now</option>
+                <option value="custom">Custom time</option>
+              </select>
+              {selectedTime === 'custom' && (
+                <input
+                  type="datetime-local"
+                  value={customTime}
+                  onChange={(e) => setCustomTime(e.target.value)}
+                  max={formatDateTimeLocal(new Date())}
+                  className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
+              )}
+            </div>
+          </div>
+
+          {/* Timing Information */}
+          <div className="bg-blue-50 p-4 rounded-lg space-y-2">
+            <h3 className="font-medium text-blue-900">Recommended Timing</h3>
+            <p className="text-sm text-blue-800">
+              Total duration: {getTotalDuration()}
+            </p>
+            <p className="text-sm text-blue-800">
+              Wait untill offset before redosing
+            </p>
+          </div>
+
+          {/* Safety Warnings */}
+          {drug.warnings && (
+            <div className="bg-red-50 p-4 rounded-lg space-y-2">
+              <div className="flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+                <h3 className="font-medium text-red-900">Safety Warning</h3>
+              </div>
+              <p className="text-red-800">{drug.warnings}</p>
+            </div>
+          )}
+        </div>
+
+        <div className="sticky bottom-0 bg-white border-t p-4 flex gap-2">
+          <button
+            onClick={handleRecordDose}
+            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+          >
+            Record
+          </button>
+          <button
+            onClick={() => {
+              setShowDoseModal(false);
+              setCustomDosage('');
+              setSelectedTime('now');
+            }}
+            className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+          >
+            Cancel
+          </button>
+        </div>
+      </MobileModal>
+
+      {/* Safety Override Modal */}
+      <MobileModal
+        isOpen={showOverrideConfirm}
+        onClose={() => {
+          setShowOverrideConfirm(false);
+          setOverrideReason('');
+        }}
+        title="Safety Override"
         fullScreen
       >
         <div className="p-4 space-y-4">
           <div className="flex items-start space-x-3">
-            <AlertTriangle className="w-6 h-6 text-yellow-500 flex-shrink-0" />
+            <AlertTriangle className="w-6 h-6 text-red-500 flex-shrink-0" />
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">Reset Timer</h3>
+              <h3 className="text-lg font-semibold text-gray-900">Safety Override Required</h3>
               <p className="mt-2 text-gray-600">
-                Are you sure you want to reset the timer? This will remove the last recorded dose.
+                {safetyChecks?.hasTimeRestriction &&
+                  `Time since last dose: ${safetyChecks.timeSinceLastDose.toFixed(1)} hours (recommended: ${formatDuration(getTimingProfile().total())})`}
+                {safetyChecks?.hasQuotaRestriction &&
+                  `Daily dose limit (${drug.settings.maxDailyDoses}) reached`}
               </p>
             </div>
           </div>
 
+          <textarea
+            value={overrideReason}
+            onChange={(e) => setOverrideReason(e.target.value)}
+            placeholder="Please provide a reason for override (required)"
+            className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-red-500"
+            rows={3}
+          />
+
+          {drug.warnings && (
+            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
+              {drug.warnings}
+            </div>
+          )}
+
           <div className="sticky bottom-0 bg-white pt-4 flex gap-3">
             <button
-              onClick={handleResetTimer}
-              className="flex-1 bg-yellow-500 text-white px-4 py-2 rounded-lg hover:bg-yellow-600"
+              onClick={handleOverrideDose}
+              disabled={!overrideReason.trim()}
+              className="flex-1 bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              Reset Timer
+              Override Safety Check
             </button>
             <button
-              onClick={() => setShowResetConfirm(false)}
+              onClick={() => {
+                setShowOverrideConfirm(false);
+                setOverrideReason('');
+              }}
               className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
             >
               Cancel
@@ -725,9 +705,35 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
           </div>
         </div>
       </MobileModal>
+
+      {/* History Modal */}
+      <MobileModal
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+        title="Dose History"
+        fullScreen
+      >
+        {renderHistory()}
+      </MobileModal>
+
+      {/* Record Dose Button */}
+      <button
+        onClick={handleStartEditingDose}
+        className="w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 
+                 bg-blue-500 hover:bg-blue-600 text-white transition-colors"
+        disabled={enableSupply && drug.settings?.currentSupply <= 0}
+      >
+        <PlusCircle className="w-5 h-5" />
+        <span>
+          {enableSupply && drug.settings?.currentSupply <= 0
+            ? 'No Supply Available'
+            : 'Record New Dose'
+          }
+        </span>
+      </button>
     </div>
   );
-}
+};
 
 DrugTracker.propTypes = {
   drug: PropTypes.shape({
@@ -765,16 +771,4 @@ DrugTracker.propTypes = {
   onUpdateSettings: PropTypes.func.isRequired
 };
 
-DrugTracker.defaultProps = {
-  drug: {
-    doses: [],
-    settings: {
-      maxDailyDoses: 4,
-      minTimeBetweenDoses: 4,
-      trackSupply: false,
-      showTimeline: true
-    }
-  }
-};
-
-export default DrugTracker; 
+export default DrugTracker;

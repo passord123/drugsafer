@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Trash2, Clock, Pill, Timer, AlertTriangle, Package } from 'lucide-react';
 import { getDrugTiming, calculateNextDoseTime } from '../utils/drugTimingHandler';
 import ConfirmationDialog from './ConfirmationDialog';
+import { timingProfiles, categoryProfiles } from './DrugTimer/timingProfiles';
 
 const DrugList = ({ drugs, onDelete, onSelect, selectedDrug }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -37,14 +38,22 @@ const DrugList = ({ drugs, onDelete, onSelect, selectedDrug }) => {
     }).length;
   };
 
-  const formatTimeBetweenDoses = (hours) => {
-    const wholeHours = Math.floor(hours);
-    const minutes = Math.round((hours - wholeHours) * 60);
+  // Get total duration from timing profiles
+  const getDrugDuration = (drugName, category) => {
+    const profile = timingProfiles[drugName.toLowerCase()] || 
+                   categoryProfiles[category] || 
+                   timingProfiles.default;
     
-    if (minutes === 0) {
-      return `${wholeHours}h`;
+    const totalMinutes = profile.total();
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = Math.round(totalMinutes % 60);
+    
+    if (hours === 0) {
+      return `${minutes}m`;
+    } else if (minutes === 0) {
+      return `${hours}h`;
     } else {
-      return `${wholeHours}h ${minutes}m`;
+      return `${hours}h ${minutes}m`;
     }
   };
 
@@ -83,7 +92,7 @@ const DrugList = ({ drugs, onDelete, onSelect, selectedDrug }) => {
               <div className="flex items-center gap-3 text-sm text-gray-600">
                 <Timer className="w-4 h-4 text-blue-500" />
                 <span>
-                  {formatTimeBetweenDoses(drug.settings?.minTimeBetweenDoses || 4)} between doses
+                  {getDrugDuration(drug.name, drug.category)} between doses
                 </span>
               </div>
 

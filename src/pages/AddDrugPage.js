@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import DrugForm from '../components/DrugForm';
 import drugData from '../data/drugs.json';
 import { ChevronLeft } from 'lucide-react';
+import { timingProfiles, categoryProfiles } from '../components/DrugTimer/timingProfiles';
 
 const AddDrugPage = () => {
   const navigate = useNavigate();
@@ -12,43 +13,68 @@ const AddDrugPage = () => {
     // Get existing drugs from localStorage
     const existingDrugs = JSON.parse(localStorage.getItem('drugs') || '[]');
 
-    // Check if the drug already exists in the list
+    // Get drug configuration from drugs.json
+    const drugConfig = defaultDrugs.find(d => 
+      d.name.toLowerCase() === drug.name.toLowerCase()
+    );
+
+    // Get timing profile for the drug
+    const profile = timingProfiles[drug.name.toLowerCase()] || 
+                   categoryProfiles[drug.category] || 
+                   timingProfiles.default;
+    
+    const totalMinutes = profile.total();
+    const defaultMinTimeBetweenDoses = totalMinutes / 60;
+
+    // Check if the drug already exists
     const existingDrug = existingDrugs.find(d => d.name === drug.name);
     if (existingDrug) {
-      // Update the existing drug with the new settings
+      // Update the existing drug with new settings while preserving defaults
       const updatedDrugs = existingDrugs.map(d =>
         d.name === drug.name
           ? {
               ...d,
               settings: {
                 ...d.settings,
-                defaultDosage: drug.settings?.defaultDosage || d.dosage || '0',
-                defaultDosageUnit: drug.settings?.defaultDosageUnit || d.dosageUnit || '',
-                minTimeBetweenDoses: drug.settings?.minTimeBetweenDoses || 0,
-                maxDailyDoses: drug.settings?.maxDailyDoses || 0
+                defaultDosage: drug.settings?.defaultDosage || drugConfig?.dosage || d.dosage,
+                defaultDosageUnit: drug.settings?.defaultDosageUnit || drugConfig?.dosageUnit || d.dosageUnit,
+                minTimeBetweenDoses: drug.settings?.useRecommendedTiming 
+                  ? defaultMinTimeBetweenDoses 
+                  : drug.settings?.minTimeBetweenDoses,
+                maxDailyDoses: drugConfig?.settings?.maxDailyDoses || 
+                              Math.floor(24 / defaultMinTimeBetweenDoses),
+                trackSupply: drug.settings?.trackSupply || false,
+                currentSupply: drug.settings?.currentSupply || null,
+                useRecommendedTiming: drug.settings?.useRecommendedTiming || true
               }
             }
           : d
       );
       localStorage.setItem('drugs', JSON.stringify(updatedDrugs));
     } else {
-      // Create a new drug object with default settings
+      // Create a new drug object with settings from configuration
       const newDrug = {
         id: Date.now(),
         name: drug.name,
-        category: drug.category,
-        dosage: drug.dosage || '0',
-        dosageUnit: drug.dosageUnit || '',
-        description: drug.description || '',
-        instructions: drug.instructions || '',
-        warnings: drug.warnings || '',
+        category: drugConfig?.category || drug.category,
+        dosage: drugConfig?.dosage || drug.dosage,
+        dosageUnit: drugConfig?.dosageUnit || drug.dosageUnit,
+        description: drugConfig?.description || drug.description,
+        instructions: drugConfig?.instructions || drug.instructions,
+        warnings: drugConfig?.warnings || drug.warnings,
         dateAdded: new Date().toISOString(),
         doses: [],
         settings: {
-          defaultDosage: drug.settings?.defaultDosage || drug.dosage || '0',
-          defaultDosageUnit: drug.settings?.defaultDosageUnit || drug.dosageUnit || '',
-          minTimeBetweenDoses: drug.settings?.minTimeBetweenDoses || 0,
-          maxDailyDoses: drug.settings?.maxDailyDoses || 0
+          defaultDosage: drug.settings?.defaultDosage || drugConfig?.dosage,
+          defaultDosageUnit: drug.settings?.defaultDosageUnit || drugConfig?.dosageUnit,
+          minTimeBetweenDoses: drug.settings?.useRecommendedTiming 
+            ? defaultMinTimeBetweenDoses 
+            : drug.settings?.minTimeBetweenDoses,
+          maxDailyDoses: drugConfig?.settings?.maxDailyDoses || 
+                        Math.floor(24 / defaultMinTimeBetweenDoses),
+          trackSupply: drug.settings?.trackSupply || false,
+          currentSupply: drug.settings?.currentSupply || null,
+          useRecommendedTiming: drug.settings?.useRecommendedTiming || true
         }
       };
 

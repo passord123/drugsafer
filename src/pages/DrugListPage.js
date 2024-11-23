@@ -5,18 +5,44 @@ import DrugList from '../components/DrugList';
 import DrugTracker from '../components/DrugTracker';
 import InteractionChecker from '../components/tracking/InteractionChecker';
 import ScrollIntoView from '../components/ScrollIntoView';
+import { timingProfiles, categoryProfiles } from '../components/DrugTimer/timingProfiles';
 
 const DrugListPage = () => {
   const [selectedDrug, setSelectedDrug] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [drugs, setDrugs] = useState([]);
 
+  // Helper function to get total duration in minutes
+  const getDrugTiming = (drugName, category) => {
+    const profile = timingProfiles[drugName.toLowerCase()] || 
+                   categoryProfiles[category] || 
+                   timingProfiles.default;
+    
+    return profile.total();
+  };
+
   useEffect(() => {
     const loadDrugs = () => {
       const savedDrugs = localStorage.getItem('drugs');
       if (savedDrugs) {
         const parsedDrugs = JSON.parse(savedDrugs);
-        setDrugs(parsedDrugs);
+        
+        // Update each drug's minTimeBetweenDoses based on timing profile's total duration
+        const updatedDrugs = parsedDrugs.map(drug => {
+          const totalMinutes = getDrugTiming(drug.name, drug.category);
+          
+          return {
+            ...drug,
+            settings: {
+              ...drug.settings,
+              // Store the total duration in minutes
+              minTimeBetweenDoses: totalMinutes / 60
+            }
+          };
+        });
+
+        setDrugs(updatedDrugs);
+        localStorage.setItem('drugs', JSON.stringify(updatedDrugs));
       }
     };
 
@@ -44,11 +70,14 @@ const DrugListPage = () => {
   const handleUpdateSettings = (drugId, updatedSettings) => {
     const updatedDrugs = drugs.map(drug => {
       if (drug.id === drugId) {
+        // Keep the original minTimeBetweenDoses based on total duration
+        const totalMinutes = getDrugTiming(drug.name, drug.category);
         return {
           ...drug,
           settings: {
             ...drug.settings,
-            ...updatedSettings
+            ...updatedSettings,
+            minTimeBetweenDoses: totalMinutes / 60
           }
         };
       }
@@ -79,9 +108,28 @@ const DrugListPage = () => {
     drug.name?.toLowerCase().includes(searchQuery.toLowerCase() || '')
   );
 
+  // Format time between doses for display
+  const formatTimeBetweenDoses = (minutes) => {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = Math.round(minutes % 60);
+    
+    if (hours === 0) {
+      return `${remainingMinutes}m`;
+    } else if (remainingMinutes === 0) {
+      return `${hours}h`;
+    } else {
+      return `${hours}h ${remainingMinutes}m`;
+    }
+  };
+
+  // Pass the formatter to DrugList
+  const enhancedDrugs = filteredDrugs.map(drug => ({
+    ...drug,
+    formattedTimeBetweenDoses: formatTimeBetweenDoses(getDrugTiming(drug.name, drug.category))
+  }));
+
   return (
     <div className="max-w-7xl mx-auto">
-      {/* Title Section */}
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold text-gray-900 mb-2">My Drug List</h1>
         <p className="text-gray-600 max-w-2xl mx-auto">
@@ -90,7 +138,6 @@ const DrugListPage = () => {
         </p>
       </div>
 
-      {/* Quick Actions */}
       {drugs.length === 0 ? (
         <div className="text-center mb-8">
           <Link
@@ -106,9 +153,9 @@ const DrugListPage = () => {
       <div className="grid lg:grid-cols-2 gap-8">
         <div className="space-y-6">
           <div className="bg-white rounded-xl shadow-sm p-6">
-            {filteredDrugs.length > 0 ? (
+            {enhancedDrugs.length > 0 ? (
               <DrugList
-                drugs={filteredDrugs}
+                drugs={enhancedDrugs}
                 onDelete={handleDelete}
                 onSelect={setSelectedDrug}
                 selectedDrug={selectedDrug}
@@ -127,14 +174,14 @@ const DrugListPage = () => {
             )}
           </div>
 
-          {/* {selectedDrug && drugs.length > 1 && (
+          {selectedDrug && drugs.length > 1 && (
             <div className="bg-white rounded-xl shadow-sm p-6">
               <InteractionChecker
                 currentMedication={selectedDrug}
                 allMedications={drugs}
               />
             </div>
-          )} */}
+          )}
         </div>
 
         {selectedDrug && (

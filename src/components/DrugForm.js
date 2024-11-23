@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, X, AlertCircle } from 'lucide-react';
+import { Search, X, AlertTriangle, Info, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAlerts } from '../contexts/AlertContext';
 import MobileModal from './layout/MobileModal';
@@ -21,122 +21,67 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
   const [currentSupply, setCurrentSupply] = useState('0');
   const [useRecommendedTiming, setUseRecommendedTiming] = useState(true);
   const [recommendedTime, setRecommendedTime] = useState(4);
-
-  const getRecommendedTiming = (drugName, category) => {
-    const profile = timingProfiles[drugName.toLowerCase()] ||
-      categoryProfiles[category] ||
-      timingProfiles.default;
-
-    // Get total duration in minutes from the profile's total() function
-    const totalDuration = profile.total();
-    // Convert to hours and round up
-    return Math.ceil(totalDuration / 60);
-  };
-
   const { addAlert } = useAlerts();
 
-  const handleAddDrug = () => {
-    if (!selectedDrug) return;
-
-    const existingDrugs = JSON.parse(localStorage.getItem('drugs') || '[]');
-
-    // Calculate timing values based on profile
-    const recommendedTime = getRecommendedTiming(selectedDrug.name, selectedDrug.category);
-
-    const newDrug = {
-      id: Date.now(),
-      name: selectedDrug.name,
-      category: selectedDrug.category || 'Custom',
-      dosage: customDosage,
-      dosageUnit: dosageUnit,
-      description: selectedDrug.description || '',
-      instructions: selectedDrug.instructions || '',
-      warnings: selectedDrug.warnings || '',
-      dateAdded: new Date().toISOString(),
-      doses: [],
-      settings: {
-        defaultDosage: customDosage,
-        defaultDosageUnit: dosageUnit,
-        minTimeBetweenDoses: useRecommendedTiming ? recommendedTime : Number(waitingPeriod),
-        maxDailyDoses: Number(maxDailyDoses),
-        trackSupply: enableSupply,
-        currentSupply: enableSupply ? Number(currentSupply) : null,
-        useRecommendedTiming: useRecommendedTiming
-      }
+  // Get recommended timing information
+  const getRecommendedTiming = (drugName, category) => {
+    const profile = timingProfiles[drugName.toLowerCase()] || 
+                   categoryProfiles[category] || 
+                   timingProfiles.default;
+    
+    const totalMinutes = profile.total();
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = Math.round(totalMinutes % 60);
+    
+    return {
+      hours,
+      minutes,
+      totalMinutes,
+      maxDailyDoses: Math.floor(24 * 60 / totalMinutes),
+      profile
     };
-
-    const updatedDrugs = [...existingDrugs, newDrug];
-    localStorage.setItem('drugs', JSON.stringify(updatedDrugs));
-
-    navigate('/drugs');
   };
 
-  const categories = useMemo(() => {
-    const uniqueCats = new Set(defaultDrugs.map(drug => drug.category));
-    return ['all', ...Array.from(uniqueCats)];
-  }, [defaultDrugs]);
-
-  const filteredDrugs = useMemo(() => {
-    return defaultDrugs.filter(drug => {
-      const matchesSearch = drug.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        drug.description?.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory = selectedCategory === 'all' || drug.category === selectedCategory;
-      return matchesSearch && matchesCategory;
-    });
-  }, [defaultDrugs, searchQuery, selectedCategory]);
-
-  const validateDrugForm = (values) => {
-    const errors = {};
-
-    if (!values.customDosage) {
-      errors.dosage = 'Dosage is required';
-    } else if (parseFloat(values.customDosage) <= 0) {
-      errors.dosage = 'Dosage must be greater than 0';
-    } else if (parseFloat(values.customDosage) > 1000) {
-      errors.dosage = 'Dosage seems unusually high, please verify';
+  // Helper function to get max daily doses from drug config
+  const getDefaultMaxDailyDoses = (drugName, category) => {
+    // First check drugs.json config
+    const drugConfig = defaultDrugs.find(d => 
+      d.name.toLowerCase() === drugName.toLowerCase()
+    );
+    
+    if (drugConfig?.settings?.maxDailyDoses) {
+      return drugConfig.settings.maxDailyDoses;
     }
 
-    if (!values.waitingPeriod) {
-      errors.waitingPeriod = 'Waiting period is required';
-    } else if (parseFloat(values.waitingPeriod) < 0) {
-      errors.waitingPeriod = 'Waiting period cannot be negative';
-    }
-
-    if (!values.maxDailyDoses) {
-      errors.maxDailyDoses = 'Maximum daily doses is required';
-    } else if (parseInt(values.maxDailyDoses) <= 0) {
-      errors.maxDailyDoses = 'Maximum daily doses must be at least 1';
-    }
-
-    if (enableSupply) {
-      if (values.currentSupply === '') {
-        errors.currentSupply = 'Current supply is required when supply tracking is enabled';
-      } else if (parseFloat(values.currentSupply) < 0) {
-        errors.currentSupply = 'Supply cannot be negative';
-      }
-    }
-
-    return errors;
+    // If no config found, calculate based on timing profile
+    const profile = timingProfiles[drugName.toLowerCase()] || 
+                   categoryProfiles[category] || 
+                   timingProfiles.default;
+    
+    const totalMinutes = profile.total();
+    const hoursPerDose = totalMinutes / 60;
+    return Math.floor(24 / hoursPerDose);
   };
 
   const handleDrugSelect = (drug) => {
     setSelectedDrug(drug);
-    setCustomDosage(drug.settings?.defaultDosage || drug.dosage || '');
-    setDosageUnit(drug.settings?.defaultDosageUnit || drug.dosageUnit || 'mg');
+    setCustomDosage(drug.dosage || '');
+    setDosageUnit(drug.dosageUnit || 'mg');
 
-    // Calculate recommended time from timing profile instead of using drugs.json
-    const recommendedTime = getRecommendedTiming(drug.name, drug.category);
-    setRecommendedTime(recommendedTime);
+    // Set max daily doses from configuration
+    setMaxDailyDoses(drug.settings?.maxDailyDoses || 
+                     getDefaultMaxDailyDoses(drug.name, drug.category));
 
-    // If using recommended timing, set the waiting period to the recommended time
+    // Get timing from profile
+    const timing = getRecommendedTiming(drug.name, drug.category);
+    setRecommendedTime(timing.totalMinutes / 60);
+    
     if (useRecommendedTiming) {
-      setWaitingPeriod(recommendedTime);
+      setWaitingPeriod(timing.totalMinutes / 60);
     } else {
-      // Otherwise use the drug's settings or default
-      setWaitingPeriod(drug.settings?.minTimeBetweenDoses || 4);
+      setWaitingPeriod(drug.settings?.minTimeBetweenDoses || timing.totalMinutes / 60);
     }
 
-    setMaxDailyDoses(drug.settings?.maxDailyDoses || Math.floor(24 / recommendedTime));
     setShowDrugDetails(true);
   };
 
@@ -161,9 +106,74 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
     setSearchQuery('');
     setShowDrugDetails(false);
     setFormErrors({});
-    setEnableSupply(true);
+    setEnableSupply(false);
     setCurrentSupply('0');
+    setUseRecommendedTiming(true);
   };
+
+  const validateForm = () => {
+    const errors = {};
+    if (!customDosage || isNaN(customDosage) || parseFloat(customDosage) <= 0) {
+      errors.dosage = 'Please enter a valid dosage amount';
+    }
+    if (enableSupply && (!currentSupply || isNaN(currentSupply) || parseFloat(currentSupply) < 0)) {
+      errors.supply = 'Please enter a valid supply amount';
+    }
+    return errors;
+  };
+
+  const handleAddDrug = () => {
+    const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setFormErrors(errors);
+      return;
+    }
+
+    if (!selectedDrug) return;
+
+    const timing = getRecommendedTiming(selectedDrug.name, selectedDrug.category);
+
+    const drugData = {
+      id: Date.now(),
+      name: selectedDrug.name,
+      category: selectedDrug.category || 'Custom',
+      dosage: customDosage,
+      dosageUnit: dosageUnit,
+      description: selectedDrug.description || '',
+      instructions: selectedDrug.instructions || '',
+      warnings: selectedDrug.warnings || '',
+      dateAdded: new Date().toISOString(),
+      doses: [],
+      settings: {
+        defaultDosage: customDosage,
+        defaultDosageUnit: dosageUnit,
+        minTimeBetweenDoses: useRecommendedTiming ? timing.totalMinutes / 60 : Number(waitingPeriod),
+        maxDailyDoses: Number(maxDailyDoses),
+        trackSupply: enableSupply,
+        currentSupply: enableSupply ? Number(currentSupply) : null,
+        useRecommendedTiming
+      }
+    };
+
+    onAdd(drugData);
+    resetForm();
+    addAlert('success', `${selectedDrug.name} added successfully`);
+    navigate('/drugs');
+  };
+
+  const categories = useMemo(() => {
+    const uniqueCats = new Set(defaultDrugs.map(drug => drug.category));
+    return ['all', ...Array.from(uniqueCats)];
+  }, [defaultDrugs]);
+
+  const filteredDrugs = useMemo(() => {
+    return defaultDrugs.filter(drug => {
+      const matchesSearch = drug.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        drug.description?.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesCategory = selectedCategory === 'all' || drug.category === selectedCategory;
+      return matchesSearch && matchesCategory;
+    });
+  }, [defaultDrugs, searchQuery, selectedCategory]);
 
   return (
     <div className="bg-white h-full">
@@ -299,7 +309,7 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
             )}
           </div>
 
-          {/* Hours Between Doses with Recommended Timing */}
+          {/* Hours Between Doses */}
           <div className="space-y-4">
             <label className="flex items-center space-x-2">
               <input
@@ -307,8 +317,9 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
                 checked={useRecommendedTiming}
                 onChange={(e) => {
                   setUseRecommendedTiming(e.target.checked);
-                  if (e.target.checked) {
-                    setWaitingPeriod(recommendedTime);
+                  if (e.target.checked && selectedDrug) {
+                    const timing = getRecommendedTiming(selectedDrug.name, selectedDrug.category);
+                    setWaitingPeriod(timing.totalMinutes / 60);
                   }
                 }}
                 className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
@@ -318,46 +329,39 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
               </span>
             </label>
 
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Hours Between Doses
-              </label>
-              <input
-                type="number"
-                value={useRecommendedTiming ? recommendedTime : waitingPeriod}
-                onChange={(e) => setWaitingPeriod(e.target.value)}
-                className="w-full input-primary"
-                min="0"
-                step="0.5"
-                disabled={useRecommendedTiming}
-                placeholder="Minimum hours between doses"
-              />
-              {formErrors.waitingPeriod && (
-                <p className="text-sm text-red-600">{formErrors.waitingPeriod}</p>
-              )}
-              {useRecommendedTiming && (
-                <p className="text-sm text-gray-500">
-                  Based on total duration: {recommendedTime} hours
-                </p>
-              )}
-            </div>
+            {!useRecommendedTiming && (
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Custom Time Between Doses (hours)
+                </label>
+                <input
+                  type="number"
+                  value={waitingPeriod}
+                  onChange={(e) => setWaitingPeriod(Number(e.target.value))}
+                  className="w-full input-primary"
+                  min="0"
+                  step="0.5"
+                />
+              </div>
+            )}
           </div>
 
-          {/* Daily Limit */}
+          {/* Max Daily Doses */}
           <div className="space-y-2">
             <label className="block text-sm font-medium text-gray-700">
-              Daily Limit
+              Maximum Doses per Day
             </label>
             <input
               type="number"
               value={maxDailyDoses}
-              onChange={(e) => setMaxDailyDoses(e.target.value)}
-              className="w-full input-primary"
+              onChange={(e) => setMaxDailyDoses(Number(e.target.value))}
+              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
               min="1"
-              placeholder="Maximum doses per day"
             />
-            {formErrors.maxDailyDoses && (
-              <p className="text-sm text-red-600">{formErrors.maxDailyDoses}</p>
+            {selectedDrug?.settings?.maxDailyDoses && (
+              <p className="text-sm text-blue-600">
+                Recommended: max {selectedDrug.settings.maxDailyDoses} doses per day
+              </p>
             )}
           </div>
 
@@ -383,18 +387,18 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
                   min="0"
                   placeholder="Initial supply amount"
                 />
-                {formErrors.currentSupply && (
-                  <p className="text-sm text-red-600">{formErrors.currentSupply}</p>
+                {formErrors.supply && (
+                  <p className="text-sm text-red-600 mt-1">{formErrors.supply}</p>
                 )}
               </div>
             )}
           </div>
 
-          {/* Safety Warnings */}
+          {/* Safety Information */}
           {selectedDrug?.warnings && (
             <div className="bg-red-50 p-4 rounded-lg space-y-2">
               <div className="flex items-center gap-2">
-                <AlertCircle className="w-5 h-5 text-red-500" />
+                <AlertTriangle className="w-5 h-5 text-red-500" />
                 <h3 className="font-medium text-red-900">Safety Warning</h3>
               </div>
               <p className="text-red-800">{selectedDrug.warnings}</p>
@@ -405,7 +409,7 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
         <div className="sticky bottom-0 bg-white border-t p-4 flex gap-2">
           <button
             onClick={handleAddDrug}
-            className="flex-1 btn-primary"
+            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
           >
             Add Drug
           </button>
@@ -414,7 +418,7 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
               setShowDrugDetails(false);
               resetForm();
             }}
-            className="flex-1 btn-secondary"
+            className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
           >
             Cancel
           </button>
