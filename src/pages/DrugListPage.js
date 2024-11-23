@@ -96,29 +96,7 @@ const DrugListPage = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="mb-8 space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">My Drugs</h1>
-          <Link
-            to="/add"
-            className="inline-flex items-center px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-          >
-            <Plus className="w-5 h-5 mr-2" />
-            Add New
-          </Link>
-        </div>
-
-        <div className="max-w-md relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search drugs..."
-            className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-          />
-        </div>
-      </div>
+      {/* ... other JSX ... */}
 
       <div className="grid lg:grid-cols-2 gap-8">
         <div className="space-y-6">
