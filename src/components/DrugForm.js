@@ -17,16 +17,16 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
   const [maxDailyDoses, setMaxDailyDoses] = useState(4);
   const [initialSupply, setInitialSupply] = useState('0');
   const [formErrors, setFormErrors] = useState({});
-  const [enableSupply, setEnableSupply] = useState(true);
+  const [enableSupply, setEnableSupply] = useState(false);
   const [currentSupply, setCurrentSupply] = useState('0');
   const [useRecommendedTiming, setUseRecommendedTiming] = useState(true);
   const [recommendedTime, setRecommendedTime] = useState(4);
 
   const getRecommendedTiming = (drugName, category) => {
-    const profile = timingProfiles[drugName.toLowerCase()] || 
-                   categoryProfiles[category] || 
-                   timingProfiles.default;
-    
+    const profile = timingProfiles[drugName.toLowerCase()] ||
+      categoryProfiles[category] ||
+      timingProfiles.default;
+
     // Get total duration in minutes from the profile's total() function
     const totalDuration = profile.total();
     // Convert to hours and round up
@@ -67,7 +67,7 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
 
     const updatedDrugs = [...existingDrugs, newDrug];
     localStorage.setItem('drugs', JSON.stringify(updatedDrugs));
-    
+
     navigate('/drugs');
   };
 
@@ -123,11 +123,11 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
     setSelectedDrug(drug);
     setCustomDosage(drug.settings?.defaultDosage || drug.dosage || '');
     setDosageUnit(drug.settings?.defaultDosageUnit || drug.dosageUnit || 'mg');
-    
+
     // Calculate recommended time from timing profile instead of using drugs.json
     const recommendedTime = getRecommendedTiming(drug.name, drug.category);
     setRecommendedTime(recommendedTime);
-    
+
     // If using recommended timing, set the waiting period to the recommended time
     if (useRecommendedTiming) {
       setWaitingPeriod(recommendedTime);
@@ -135,7 +135,7 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
       // Otherwise use the drug's settings or default
       setWaitingPeriod(drug.settings?.minTimeBetweenDoses || 4);
     }
-    
+
     setMaxDailyDoses(drug.settings?.maxDailyDoses || Math.floor(24 / recommendedTime));
     setShowDrugDetails(true);
   };
