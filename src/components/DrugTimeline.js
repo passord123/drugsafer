@@ -1,12 +1,42 @@
 import React, { useState, useEffect } from 'react';
-import { getSubstanceProfile } from './DrugTimer/timingProfiles';
-import { Clock, AlertTriangle } from 'lucide-react';
+import { Clock, AlertTriangle, ArrowUpCircle, Timer, Thermometer, Activity, HeartPulse } from 'lucide-react';
+import { timingProfiles, categoryProfiles } from './DrugTimer/timingProfiles';
 
 const DrugTimeline = ({ lastDoseTime, drugName }) => {
   const [currentPhase, setCurrentPhase] = useState('none');
   const [progress, setProgress] = useState(0);
+  const [timeToNextPhase, setTimeToNextPhase] = useState(null);
+  const [isExpanded, setIsExpanded] = useState(false);
   
-  const profile = getSubstanceProfile(drugName);
+  const profile = timingProfiles[drugName.toLowerCase()] || 
+                 categoryProfiles[drugName] || 
+                 timingProfiles.default;
+
+  const calculateTimeToNextPhase = (timeSince) => {
+    let nextPhaseStart = 0;
+    let nextPhaseName = '';
+
+    if (timeSince < profile.onset.duration) {
+      nextPhaseStart = profile.onset.duration;
+      nextPhaseName = 'peak';
+    } else if (timeSince < (profile.onset.duration + profile.peak.duration)) {
+      nextPhaseStart = profile.onset.duration + profile.peak.duration;
+      nextPhaseName = 'offset';
+    } else if (timeSince < profile.total) {
+      nextPhaseStart = profile.total;
+      nextPhaseName = 'finished';
+    }
+
+    const minutesRemaining = nextPhaseStart - timeSince;
+    const totalSeconds = Math.max(0, Math.floor(minutesRemaining * 60));
+    
+    return {
+      hours: Math.floor(totalSeconds / 3600),
+      minutes: Math.floor((totalSeconds % 3600) / 60),
+      seconds: totalSeconds % 60,
+      nextPhase: nextPhaseName
+    };
+  };
 
   useEffect(() => {
     if (!lastDoseTime) return;
@@ -21,156 +51,160 @@ const DrugTimeline = ({ lastDoseTime, drugName }) => {
         phase = 'onset';
       } else if (minutesSince < (profile.onset.duration + profile.peak.duration)) {
         phase = 'peak';
-      } else if (minutesSince < (profile.onset.duration + profile.peak.duration + profile.duration.duration)) {
-        phase = 'duration';
       } else if (minutesSince < profile.total) {
-        phase = 'comedown';
+        phase = 'offset';
       } else {
         phase = 'finished';
       }
 
       setCurrentPhase(phase);
       setProgress(Math.min(100, (minutesSince / profile.total) * 100));
+      setTimeToNextPhase(calculateTimeToNextPhase(minutesSince));
     };
 
     updateTimeline();
-    const interval = setInterval(updateTimeline, 60000);
+    const interval = setInterval(updateTimeline, 1000);
     return () => clearInterval(interval);
   }, [lastDoseTime, profile]);
 
   if (!lastDoseTime) return null;
 
-  const formatDuration = (minutes) => {
-    const hrs = Math.floor(minutes / 60);
-    const mins = minutes % 60;
-    return hrs > 0 ? `${hrs}h ${mins}m` : `${mins}m`;
+  const formatCountdown = (time) => {
+    if (!time) return '00:00:00';
+    const { hours, minutes, seconds } = time;
+    return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
-  const getPhaseTime = (phase) => {
-    const doseTime = new Date(lastDoseTime);
-    let minutes = 0;
-    
+  const getPhaseIcon = (phase) => {
     switch (phase) {
       case 'onset':
-        minutes = profile.onset.duration;
-        break;
+        return <Clock className="w-5 h-5" />;
       case 'peak':
-        minutes = profile.onset.duration + profile.peak.duration;
-        break;
-      case 'duration':
-        minutes = profile.onset.duration + profile.peak.duration + profile.duration.duration;
-        break;
-      case 'comedown':
-        minutes = profile.total;
-        break;
+        return <Activity className="w-5 h-5" />;
+      case 'offset':
+        return <HeartPulse className="w-5 h-5" />;
       default:
-        return '';
+        return <Thermometer className="w-5 h-5" />;
     }
-
-    return new Date(doseTime.getTime() + minutes * 60000).toLocaleTimeString([], { 
-      hour: '2-digit', 
-      minute: '2-digit' 
-    });
   };
 
-  const phaseColors = {
-    onset: 'bg-yellow-500',
-    peak: 'bg-red-500',
-    duration: 'bg-orange-500',
-    comedown: 'bg-blue-500',
-    finished: 'bg-green-500'
+  const getPhaseColor = (phase) => {
+    switch (phase) {
+      case 'onset':
+        return 'bg-yellow-500';
+      case 'peak':
+        return 'bg-red-500';
+      case 'offset':
+        return 'bg-orange-500';
+      default:
+        return 'bg-green-500';
+    }
   };
 
-  const phaseInfo = [
-    {
-      name: 'Onset',
-      phase: 'onset',
-      duration: profile.onset.duration,
-      intensity: profile.onset.intensity,
-      safety: profile.safetyInfo?.onset
-    },
-    {
-      name: 'Peak',
-      phase: 'peak',
-      duration: profile.peak.duration,
-      intensity: profile.peak.intensity,
-      safety: profile.safetyInfo?.peak
-    },
-    {
-      name: 'Duration',
-      phase: 'duration',
-      duration: profile.duration.duration,
-      intensity: profile.duration.intensity,
-      safety: profile.safetyInfo?.duration
-    }
-  ];
+  const getCurrentPhaseInfo = () => {
+    const phaseInfo = {
+      onset: {
+        color: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+        title: 'Onset Phase',
+        description: profile.safetyInfo.onset
+      },
+      peak: {
+        color: 'bg-red-50 border-red-200 text-red-700',
+        title: 'Peak Phase',
+        description: profile.safetyInfo.peak
+      },
+      offset: {
+        color: 'bg-orange-50 border-orange-200 text-orange-700',
+        title: 'Offset Phase',
+        description: profile.safetyInfo.offset
+      },
+      finished: {
+        color: 'bg-green-50 border-green-200 text-green-700',
+        title: 'Safe Phase',
+        description: 'Effects should be minimal now'
+      }
+    };
+
+    return phaseInfo[currentPhase] || phaseInfo.finished;
+  };
+
+  const phaseInfo = getCurrentPhaseInfo();
 
   return (
-    <div className="space-y-4 bg-white rounded-lg border p-4">
-      <div className="flex items-center justify-between mb-2">
-        <div className="flex items-center gap-2">
-          <Clock className="w-5 h-5 text-gray-500" />
-          <h3 className="font-medium">Effect Timeline</h3>
+    <div className="space-y-4">
+      {/* Main Timer Display */}
+      <div className={`p-4 rounded-lg border ${phaseInfo.color}`}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            {getPhaseIcon(currentPhase)}
+            <h3 className="font-medium">{phaseInfo.title}</h3>
+          </div>
+          <button 
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-sm hover:underline"
+          >
+            {isExpanded ? 'Show Less' : 'Show More'}
+          </button>
         </div>
-        <span className="text-sm text-gray-500">
-          {formatDuration(Math.floor((new Date() - new Date(lastDoseTime)) / 60000))} since dose
-        </span>
-      </div>
 
-      {/* Progress bar */}
-      <div className="space-y-1">
-        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+        <div className="text-center mb-4">
+          <div className="text-3xl font-mono font-bold mb-2">
+            {formatCountdown(timeToNextPhase)}
+          </div>
+          <p className="text-sm">
+            Until {timeToNextPhase?.nextPhase === 'finished' ? 'completion' : `${timeToNextPhase?.nextPhase} phase`}
+          </p>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="h-2 bg-white/50 rounded-full overflow-hidden">
           <div 
-            className={`h-full transition-all duration-500 ${phaseColors[currentPhase]}`}
+            className={`h-full transition-all duration-500 ${getPhaseColor(currentPhase)}`}
             style={{ width: `${progress}%` }}
           />
         </div>
-        <div className="flex justify-between text-xs text-gray-500">
-          <span>{new Date(lastDoseTime).toLocaleTimeString([], { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-          })}</span>
-          <span>{getPhaseTime('comedown')}</span>
-        </div>
+
+        {/* Safety Information */}
+        {profile.safetyInfo?.[currentPhase] && (
+          <div className="mt-4 flex items-start gap-2 text-sm">
+            <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+            <p>{profile.safetyInfo[currentPhase]}</p>
+          </div>
+        )}
       </div>
 
-      {/* Phase cards */}
-      <div className="grid grid-cols-3 gap-2">
-        {phaseInfo.map(({ name, phase, duration, intensity, safety }) => (
-          <div 
-            key={phase}
-            className={`p-3 rounded-lg border ${
-              currentPhase === phase 
-                ? `bg-${phase === 'onset' ? 'yellow' : phase === 'peak' ? 'red' : 'orange'}-50 
-                   border-${phase === 'onset' ? 'yellow' : phase === 'peak' ? 'red' : 'orange'}-200` 
-                : 'bg-gray-50 border-gray-200'
-            }`}
-          >
-            <div className="font-medium mb-1">{name}</div>
-            <div className="text-sm text-gray-600">
-              {formatDuration(duration)}
-              {currentPhase === phase && (
-                <span className="ml-2 text-xs px-2 py-0.5 rounded-full bg-white border">
-                  Current
-                </span>
-              )}
-            </div>
-            {intensity && (
-              <div className="text-xs text-gray-500 mt-1">
-                {intensity} intensity
+      {/* Expanded Details */}
+      {isExpanded && (
+        <div className="grid gap-3 md:grid-cols-3">
+          {['onset', 'peak', 'offset'].map((phase) => (
+            <div 
+              key={phase}
+              className={`p-3 rounded-lg border ${
+                currentPhase === phase 
+                  ? `bg-${phase === 'onset' ? 'yellow' : phase === 'peak' ? 'red' : 'orange'}-50 
+                     border-${phase === 'onset' ? 'yellow' : phase === 'peak' ? 'red' : 'orange'}-200` 
+                  : 'bg-gray-50 border-gray-200'
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                {getPhaseIcon(phase)}
+                <span className="font-medium capitalize">{phase}</span>
+                {currentPhase === phase && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-white border">
+                    Current
+                  </span>
+                )}
               </div>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {/* Safety info */}
-      {profile.safetyInfo?.[currentPhase] && (
-        <div className="mt-2 p-3 text-sm bg-blue-50 border border-blue-200 rounded-lg">
-          <div className="flex items-center gap-2">
-            <AlertTriangle className="w-4 h-4 text-blue-500" />
-            <span>{profile.safetyInfo[currentPhase]}</span>
-          </div>
+              <div className="text-sm space-y-1">
+                <p>Duration: {phase === 'onset' ? profile.onset.duration : 
+                            phase === 'peak' ? profile.peak.duration : 
+                            profile.offset.duration} minutes</p>
+                <p>Intensity: {phase === 'onset' ? profile.onset.intensity :
+                             phase === 'peak' ? profile.peak.intensity :
+                             profile.offset.intensity}</p>
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

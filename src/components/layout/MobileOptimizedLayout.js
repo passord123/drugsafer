@@ -24,7 +24,7 @@ const MobileOptimizedLayout = ({ children }) => {
           </Link>
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-2 hover:bg-gray-100 rounded-lg"
+            className="p-2 hover:bg-gray-100 rounded-lg lg:hidden"
           >
             {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -55,9 +55,11 @@ const MobileOptimizedLayout = ({ children }) => {
       )}
 
       {/* Main Content */}
-      <main className="pt-16 pb-16 min-h-screen bg-gray-50">
-        {children}
-      </main>
+      <div className="min-h-screen bg-gray-50">
+        <div className="pt-16 pb-16">
+          {children}
+        </div>
+      </div>
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-40">
