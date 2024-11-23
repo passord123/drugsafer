@@ -148,10 +148,10 @@ export const timingProfiles = {
 
   // Dissociatives
   'ketamin': {
-    onset: { duration: 5, intensity: 'high' },
-    comeup: { duration: 2, intensity: 'high' },
+    onset: { duration: 2, intensity: 'high' },
+    comeup: { duration: 10, intensity: 'high' },
     peak: { duration: 30, intensity: 'very high' },
-    offset: { duration: 60, intensity: 'moderate' },
+    offset: { duration: 30, intensity: 'moderate' },
     total: function () {
       return this.onset.duration + this.comeup.duration + this.peak.duration + this.offset.duration;
     },
