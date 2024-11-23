@@ -56,10 +56,10 @@ export const timingProfiles = {
   },
 
   'kokain': {
-    onset: { duration: 0.1, intensity: 'high' },
-    comeup: { duration: 0.1, intensity: 'high' },
-    peak: { duration: 0.1, intensity: 'very high' },
-    offset: { duration: 0.1, intensity: 'moderate' },
+    onset: { duration: 1, intensity: 'high' },
+    comeup: { duration: 10, intensity: 'high' },
+    peak: { duration: 20, intensity: 'very high' },
+    offset: { duration: 20, intensity: 'moderate' },
     total: function () {
       return this.onset.duration + this.comeup.duration + this.peak.duration + this.offset.duration;
     },
