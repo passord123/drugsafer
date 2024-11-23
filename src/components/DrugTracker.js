@@ -10,6 +10,8 @@ import PropTypes from 'prop-types';
 import { getDrugTiming, calculateNextDoseTime, checkDoseSafety } from '../utils/drugTimingHandler';
 import { useAlerts } from '../contexts/AlertContext';
 import { timingProfiles, categoryProfiles } from './DrugTimer/timingProfiles';
+import DrugTrackerHeader from './DrugTrackerHeader';
+
 
 const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
   // Core state
@@ -331,29 +333,13 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
   };
   return (
     <div className="p-6 space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">{drug.name}</h2>
-          <p className="text-sm text-gray-500">
-            Standard dose: {getStandardDose()} {drug.dosageUnit}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setShowHistory(!showHistory)}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <History className="w-5 h-5 text-gray-600" />
-          </button>
-          <button
-            onClick={() => setShowSettings(true)}
-            className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-          >
-            <Settings className="w-5 h-5 text-gray-600" />
-          </button>
-        </div>
-      </div>
+      {/* New Enhanced Header */}
+      <DrugTrackerHeader
+        drug={drug}
+        onOpenHistory={() => setShowHistory(true)}
+        onOpenSettings={() => setShowSettings(true)}
+        lastDoseTime={drug.doses?.[0]?.timestamp}
+      />
 
       {/* Supply Status */}
       {enableSupply && (
