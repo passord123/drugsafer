@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Trash2, Clock, Pill, Timer, AlertTriangle, Package, Calendar } from 'lucide-react';
+import { Trash2, Clock, Pill, Timer, AlertTriangle, Package } from 'lucide-react';
+import { getDrugTiming, calculateNextDoseTime } from '../utils/drugTimingHandler';
 import ConfirmationDialog from './ConfirmationDialog';
 
 const DrugList = ({ drugs, onDelete, onSelect, selectedDrug }) => {
@@ -13,11 +14,14 @@ const DrugList = ({ drugs, onDelete, onSelect, selectedDrug }) => {
   };
 
   const calculateTimeUntilNextDose = (drug) => {
-    if (!drug.doses?.[0]) return null;
-    const lastDoseTime = new Date(drug.doses[0].timestamp);
-    const nextDoseTime = new Date(lastDoseTime.getTime() + (drug.settings.minTimeBetweenDoses * 60 * 60 * 1000));
+    if (!drug.doses?.[0]) return 'Ready';
+    
+    const nextDoseTime = calculateNextDoseTime(drug, drug.doses[0].timestamp);
+    if (!nextDoseTime) return 'Ready';
+
     const now = new Date();
     if (now >= nextDoseTime) return 'Ready';
+    
     const timeDiff = nextDoseTime - now;
     const hours = Math.floor(timeDiff / (1000 * 60 * 60));
     const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
@@ -31,6 +35,17 @@ const DrugList = ({ drugs, onDelete, onSelect, selectedDrug }) => {
       const doseDate = new Date(dose.timestamp).setHours(0, 0, 0, 0);
       return doseDate === today;
     }).length;
+  };
+
+  const formatTimeBetweenDoses = (hours) => {
+    const wholeHours = Math.floor(hours);
+    const minutes = Math.round((hours - wholeHours) * 60);
+    
+    if (minutes === 0) {
+      return `${wholeHours}h`;
+    } else {
+      return `${wholeHours}h ${minutes}m`;
+    }
   };
 
   return (
@@ -49,9 +64,7 @@ const DrugList = ({ drugs, onDelete, onSelect, selectedDrug }) => {
             <div className="flex justify-between items-start">
               <div>
                 <h3 className="font-medium text-gray-900 text-lg">{drug.name}</h3>
-                <p className="text-sm text-gray-500">
-                  {drug.category}
-                </p>
+                <p className="text-sm text-gray-500">{drug.category}</p>
               </div>
               <button
                 onClick={(e) => handleDeleteClick(e, drug)}
@@ -62,33 +75,30 @@ const DrugList = ({ drugs, onDelete, onSelect, selectedDrug }) => {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
-              {/* Dose Info */}
               <div className="flex items-center gap-3 text-sm text-gray-600">
                 <Pill className="w-4 h-4 text-blue-500" />
                 <span>Standard dose: {drug.settings?.defaultDosage || drug.dosage} {drug.settings?.defaultDosageUnit || drug.dosageUnit}</span>
               </div>
 
-              {/* Time Between Doses */}
               <div className="flex items-center gap-3 text-sm text-gray-600">
                 <Timer className="w-4 h-4 text-blue-500" />
-                <span>{drug.settings?.minTimeBetweenDoses}h between doses</span>
-              </div>
-
-              {/* Daily Limit */}
-              <div className="flex items-center gap-3 text-sm text-gray-600">
-                <Calendar className="w-4 h-4 text-blue-500" />
                 <span>
-                  Today: {getTodaysDoses(drug)} of {drug.settings?.maxDailyDoses} max doses
+                  {formatTimeBetweenDoses(drug.settings?.minTimeBetweenDoses || 4)} between doses
                 </span>
               </div>
 
-              {/* Next Dose Timer */}
+              <div className="flex items-center gap-3 text-sm text-gray-600">
+                <Clock className="w-4 h-4 text-blue-500" />
+                <span>
+                  Today: {getTodaysDoses(drug)} of {drug.settings?.maxDailyDoses || 4} max doses
+                </span>
+              </div>
+
               <div className="flex items-center gap-3 text-sm text-gray-600">
                 <Clock className="w-4 h-4 text-blue-500" />
                 <span>Next dose: {calculateTimeUntilNextDose(drug)}</span>
               </div>
 
-              {/* Supply Tracking */}
               {drug.settings?.trackSupply && (
                 <div className="flex items-center gap-3 text-sm text-gray-600">
                   <Package className="w-4 h-4 text-blue-500" />
@@ -97,7 +107,6 @@ const DrugList = ({ drugs, onDelete, onSelect, selectedDrug }) => {
               )}
             </div>
 
-            {/* Warnings */}
             {drug.warnings && (
               <div className="flex items-start gap-2 text-red-600 mt-2">
                 <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />

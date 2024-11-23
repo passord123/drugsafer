@@ -3,10 +3,18 @@
 import { Clock, AlertTriangle, Shield, Heart, Thermometer } from 'lucide-react';
 
 export const PHASES = {
+  comeup: {
+    color: 'bg-purple-50 border-purple-200',
+    textColor: 'text-purple-800',
+    title: 'Comeup Phase - Initial Effects',
+    message: 'Initial effects beginning. Find safe environment.',
+    icon: ArrowUpCircle,
+    vitals: ['heartRate']
+  },
   onset: {
     color: 'bg-yellow-50 border-yellow-200',
     textColor: 'text-yellow-800',
-    title: 'Onset Phase - Effects Beginning',
+    title: 'Onset Phase - Effects Building',
     message: 'Find a safe, quiet environment. Have water ready.',
     icon: Clock,
     vitals: ['temperature']
@@ -45,27 +53,14 @@ export const PHASES = {
   }
 };
 
-export const VITAL_SIGNS = {
-  temperature: {
-    icon: Thermometer,
-    message: 'Monitor body temperature - stay cool and hydrated'
-  },
-  heartRate: {
-    icon: Heart,
-    message: 'Check heart rate - seek help if racing or irregular'
-  },
-  breathing: {
-    icon: AlertTriangle,
-    message: 'Monitor breathing - seek help if shallow or difficult'
-  }
-};
-
 export const calculatePhase = (minutesSince, profile) => {
-  if (minutesSince < profile.onset) {
+  if (minutesSince < profile.comeup?.duration) {
+    return 'comeup';
+  } else if (minutesSince < profile.comeup?.duration + profile.onset) {
     return 'onset';
-  } else if (minutesSince < profile.onset + profile.peak) {
+  } else if (minutesSince < profile.comeup?.duration + profile.onset + profile.peak) {
     return 'peak';
-  } else if (minutesSince < profile.onset + profile.peak + profile.plateau) {
+  } else if (minutesSince < profile.comeup?.duration + profile.onset + profile.peak + profile.plateau) {
     return 'plateau';
   } else if (minutesSince < profile.total) {
     return 'comedown';
@@ -78,22 +73,28 @@ export const calculateTimeRemaining = (phase, doseTime, profile) => {
   const doseDate = new Date(doseTime);
   let targetTime = new Date(doseDate);
 
+  let timeToAdd = 0;
   switch (phase) {
+    case 'comeup':
+      timeToAdd = profile.comeup?.duration || 0;
+      break;
     case 'onset':
-      targetTime.setMinutes(targetTime.getMinutes() + profile.onset);
+      timeToAdd = (profile.comeup?.duration || 0) + profile.onset;
       break;
     case 'peak':
-      targetTime.setMinutes(targetTime.getMinutes() + profile.onset + profile.peak);
+      timeToAdd = (profile.comeup?.duration || 0) + profile.onset + profile.peak;
       break;
     case 'plateau':
-      targetTime.setMinutes(targetTime.getMinutes() + profile.onset + profile.peak + profile.plateau);
+      timeToAdd = (profile.comeup?.duration || 0) + profile.onset + profile.peak + profile.plateau;
       break;
     case 'comedown':
-      targetTime.setMinutes(targetTime.getMinutes() + profile.total);
+      timeToAdd = profile.total;
       break;
     default:
       return { hours: 0, minutes: 0, seconds: 0 };
   }
+
+  targetTime.setMinutes(targetTime.getMinutes() + timeToAdd);
 
   if (targetTime <= now) {
     return { hours: 0, minutes: 0, seconds: 0 };

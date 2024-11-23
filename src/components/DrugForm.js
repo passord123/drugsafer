@@ -3,6 +3,7 @@ import { Search, X, AlertCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAlerts } from '../contexts/AlertContext';
 import MobileModal from './layout/MobileModal';
+import { timingProfiles, categoryProfiles } from './DrugTimer/timingProfiles';
 
 const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
   const navigate = useNavigate();
@@ -18,6 +19,19 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
   const [formErrors, setFormErrors] = useState({});
   const [enableSupply, setEnableSupply] = useState(true);
   const [currentSupply, setCurrentSupply] = useState('0');
+  const [useRecommendedTiming, setUseRecommendedTiming] = useState(true);
+  const [recommendedTime, setRecommendedTime] = useState(4);
+
+  const getRecommendedTiming = (drugName, category) => {
+    const profile = timingProfiles[drugName.toLowerCase()] || 
+                   categoryProfiles[category] || 
+                   timingProfiles.default;
+    
+    // Get total duration in minutes from the profile's total() function
+    const totalDuration = profile.total();
+    // Convert to hours and round up
+    return Math.ceil(totalDuration / 60);
+  };
 
   const { addAlert } = useAlerts();
 
@@ -25,6 +39,9 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
     if (!selectedDrug) return;
 
     const existingDrugs = JSON.parse(localStorage.getItem('drugs') || '[]');
+
+    // Calculate timing values based on profile
+    const recommendedTime = getRecommendedTiming(selectedDrug.name, selectedDrug.category);
 
     const newDrug = {
       id: Date.now(),
@@ -40,10 +57,11 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
       settings: {
         defaultDosage: customDosage,
         defaultDosageUnit: dosageUnit,
-        minTimeBetweenDoses: Number(waitingPeriod),
+        minTimeBetweenDoses: useRecommendedTiming ? recommendedTime : Number(waitingPeriod),
         maxDailyDoses: Number(maxDailyDoses),
         trackSupply: enableSupply,
-        currentSupply: enableSupply ? Number(currentSupply) : null
+        currentSupply: enableSupply ? Number(currentSupply) : null,
+        useRecommendedTiming: useRecommendedTiming
       }
     };
 
@@ -103,10 +121,22 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
 
   const handleDrugSelect = (drug) => {
     setSelectedDrug(drug);
-    setCustomDosage(drug.settings?.defaultDosage || drug.dosage?.split(' ')[0] || '');
+    setCustomDosage(drug.settings?.defaultDosage || drug.dosage || '');
     setDosageUnit(drug.settings?.defaultDosageUnit || drug.dosageUnit || 'mg');
-    setWaitingPeriod(drug.settings?.minTimeBetweenDoses || 4);
-    setMaxDailyDoses(drug.settings?.maxDailyDoses || 4);
+    
+    // Calculate recommended time from timing profile instead of using drugs.json
+    const recommendedTime = getRecommendedTiming(drug.name, drug.category);
+    setRecommendedTime(recommendedTime);
+    
+    // If using recommended timing, set the waiting period to the recommended time
+    if (useRecommendedTiming) {
+      setWaitingPeriod(recommendedTime);
+    } else {
+      // Otherwise use the drug's settings or default
+      setWaitingPeriod(drug.settings?.minTimeBetweenDoses || 4);
+    }
+    
+    setMaxDailyDoses(drug.settings?.maxDailyDoses || Math.floor(24 / recommendedTime));
     setShowDrugDetails(true);
   };
 
@@ -238,36 +268,55 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
         fullScreen
       >
         <div className="p-4 space-y-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Standard Dose
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="number"
-                  value={customDosage}
-                  onChange={(e) => setCustomDosage(e.target.value)}
-                  className="flex-1 input-primary"
-                  placeholder="Amount"
-                  min="0"
-                  step="any"
-                />
-                <select
-                  value={dosageUnit}
-                  onChange={(e) => setDosageUnit(e.target.value)}
-                  className="w-24 input-primary"
-                >
-                  <option value="mg">mg</option>
-                  <option value="ml">ml</option>
-                  <option value="g">g</option>
-                  <option value="tablets">tablets</option>
-                </select>
-              </div>
-              {formErrors.dosage && (
-                <p className="text-sm text-red-600">{formErrors.dosage}</p>
-              )}
+          {/* Standard Dose */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Standard Dose
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="number"
+                value={customDosage}
+                onChange={(e) => setCustomDosage(e.target.value)}
+                className="flex-1 input-primary"
+                placeholder="Amount"
+                min="0"
+                step="any"
+              />
+              <select
+                value={dosageUnit}
+                onChange={(e) => setDosageUnit(e.target.value)}
+                className="w-24 input-primary"
+              >
+                <option value="mg">mg</option>
+                <option value="ml">ml</option>
+                <option value="g">g</option>
+                <option value="tablets">tablets</option>
+              </select>
             </div>
+            {formErrors.dosage && (
+              <p className="text-sm text-red-600">{formErrors.dosage}</p>
+            )}
+          </div>
+
+          {/* Hours Between Doses with Recommended Timing */}
+          <div className="space-y-4">
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={useRecommendedTiming}
+                onChange={(e) => {
+                  setUseRecommendedTiming(e.target.checked);
+                  if (e.target.checked) {
+                    setWaitingPeriod(recommendedTime);
+                  }
+                }}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">
+                Use Recommended Time Between Doses
+              </span>
+            </label>
 
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
@@ -275,64 +324,73 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
               </label>
               <input
                 type="number"
-                value={waitingPeriod}
+                value={useRecommendedTiming ? recommendedTime : waitingPeriod}
                 onChange={(e) => setWaitingPeriod(e.target.value)}
                 className="w-full input-primary"
                 min="0"
                 step="0.5"
+                disabled={useRecommendedTiming}
                 placeholder="Minimum hours between doses"
               />
               {formErrors.waitingPeriod && (
                 <p className="text-sm text-red-600">{formErrors.waitingPeriod}</p>
               )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Daily Limit
-              </label>
-              <input
-                type="number"
-                value={maxDailyDoses}
-                onChange={(e) => setMaxDailyDoses(e.target.value)}
-                className="w-full input-primary"
-                min="1"
-                placeholder="Maximum doses per day"
-              />
-              {formErrors.maxDailyDoses && (
-                <p className="text-sm text-red-600">{formErrors.maxDailyDoses}</p>
-              )}
-            </div>
-
-            <div className="space-y-2">
-              <label className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={enableSupply}
-                  onChange={(e) => setEnableSupply(e.target.checked)}
-                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                />
-                <span className="text-sm font-medium text-gray-700">Track Supply</span>
-              </label>
-
-              {enableSupply && (
-                <div className="mt-2">
-                  <input
-                    type="number"
-                    value={currentSupply}
-                    onChange={(e) => setCurrentSupply(e.target.value)}
-                    className="w-full input-primary"
-                    min="0"
-                    placeholder="Initial supply amount"
-                  />
-                  {formErrors.currentSupply && (
-                    <p className="text-sm text-red-600">{formErrors.currentSupply}</p>
-                  )}
-                </div>
+              {useRecommendedTiming && (
+                <p className="text-sm text-gray-500">
+                  Based on total duration: {recommendedTime} hours
+                </p>
               )}
             </div>
           </div>
 
+          {/* Daily Limit */}
+          <div className="space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Daily Limit
+            </label>
+            <input
+              type="number"
+              value={maxDailyDoses}
+              onChange={(e) => setMaxDailyDoses(e.target.value)}
+              className="w-full input-primary"
+              min="1"
+              placeholder="Maximum doses per day"
+            />
+            {formErrors.maxDailyDoses && (
+              <p className="text-sm text-red-600">{formErrors.maxDailyDoses}</p>
+            )}
+          </div>
+
+          {/* Supply Tracking */}
+          <div className="space-y-2">
+            <label className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                checked={enableSupply}
+                onChange={(e) => setEnableSupply(e.target.checked)}
+                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-sm font-medium text-gray-700">Track Supply</span>
+            </label>
+
+            {enableSupply && (
+              <div className="mt-2">
+                <input
+                  type="number"
+                  value={currentSupply}
+                  onChange={(e) => setCurrentSupply(e.target.value)}
+                  className="w-full input-primary"
+                  min="0"
+                  placeholder="Initial supply amount"
+                />
+                {formErrors.currentSupply && (
+                  <p className="text-sm text-red-600">{formErrors.currentSupply}</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Safety Warnings */}
           {selectedDrug?.warnings && (
             <div className="bg-red-50 p-4 rounded-lg space-y-2">
               <div className="flex items-center gap-2">
