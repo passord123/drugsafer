@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import DrugList from '../components/DrugList';
 import DrugTracker from '../components/DrugTracker';
 import InteractionChecker from '../components/tracking/InteractionChecker';
+import ScrollIntoView from '../components/ScrollIntoView';
 
 const DrugListPage = () => {
   const [selectedDrug, setSelectedDrug] = useState(null);
@@ -154,13 +155,15 @@ const DrugListPage = () => {
         </div>
 
         {selectedDrug && (
-          <div className="bg-white rounded-xl shadow-sm">
-            <DrugTracker
-              drug={selectedDrug}
-              onRecordDose={handleRecordDose}
-              onUpdateSettings={handleUpdateSettings}
-            />
-          </div>
+          <ScrollIntoView active={Boolean(selectedDrug)}>
+            <div className="bg-white rounded-xl shadow-sm">
+              <DrugTracker
+                drug={selectedDrug}
+                onRecordDose={handleRecordDose}
+                onUpdateSettings={handleUpdateSettings}
+              />
+            </div>
+          </ScrollIntoView>
         )}
       </div>
     </div>
