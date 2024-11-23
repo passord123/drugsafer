@@ -7,6 +7,7 @@ const DrugTimeline = ({ lastDoseTime, drugName }) => {
   const [progress, setProgress] = useState(0);
   const [timeToNextPhase, setTimeToNextPhase] = useState(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [showVitals, setShowVitals] = useState(false);
   
   const getModifiedProfile = (name) => {
     const baseProfile = timingProfiles[name.toLowerCase()] || 
@@ -106,10 +107,7 @@ const DrugTimeline = ({ lastDoseTime, drugName }) => {
       setTimeToNextPhase(timeRemaining);
     };
 
-    // Initial update
     updateTimeline();
-    
-    // Update every second
     const interval = setInterval(updateTimeline, 1000);
     return () => clearInterval(interval);
   }, [lastDoseTime, drugName]);
@@ -154,6 +152,12 @@ const DrugTimeline = ({ lastDoseTime, drugName }) => {
     return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
 
+  const formatDuration = (minutes) => {
+    const hours = Math.floor(minutes / 60);
+    const mins = minutes % 60;
+    return hours > 0 ? `${hours}h ${mins}m` : `${mins}m`;
+  };
+
   if (!lastDoseTime) {
     return (
       <div className="p-4 bg-gray-50 rounded-lg border border-gray-200 text-center text-gray-500">
@@ -162,8 +166,11 @@ const DrugTimeline = ({ lastDoseTime, drugName }) => {
     );
   }
 
+  const phases = ['onset', 'comeup', 'peak', 'offset'];
+
   return (
     <div className="space-y-4">
+      {/* Main Timer Display */}
       <div className={`p-4 rounded-lg border ${getPhaseBgColor(currentPhase)}`}>
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
@@ -174,6 +181,12 @@ const DrugTimeline = ({ lastDoseTime, drugName }) => {
                `${currentPhase.charAt(0).toUpperCase() + currentPhase.slice(1)} Phase`}
             </h3>
           </div>
+          <button 
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="text-sm hover:underline"
+          >
+            {isExpanded ? 'Show Less' : 'Show More'}
+          </button>
         </div>
 
         <div className="text-center mb-4">
@@ -197,6 +210,67 @@ const DrugTimeline = ({ lastDoseTime, drugName }) => {
           <div className="mt-4 flex items-start gap-2 text-sm">
             <AlertTriangle className="w-4 h-4 flex-shrink-0 mt-0.5" />
             <p>{profile.safetyInfo[currentPhase]}</p>
+          </div>
+        )}
+      </div>
+
+      {/* Expanded Phase Details */}
+      {isExpanded && (
+        <div className="grid gap-3 md:grid-cols-4">
+          {phases.map((phase) => (
+            <div 
+              key={phase}
+              className={`p-3 rounded-lg border ${
+                currentPhase === phase ? getPhaseBgColor(phase) : 'bg-gray-50 border-gray-200'
+              }`}
+            >
+              <div className="flex items-center gap-2 mb-2">
+                {getPhaseIcon(phase)}
+                <span className="font-medium capitalize">{phase}</span>
+                {currentPhase === phase && (
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-white border">
+                    Current
+                  </span>
+                )}
+              </div>
+              <div className="text-sm space-y-1">
+                <p>Duration: {formatDuration(profile[phase].duration)}</p>
+                <p>Intensity: {profile[phase].intensity}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Vital Signs Monitoring */}
+      <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+        <div className="flex items-center justify-between mb-2">
+          <h4 className="font-medium text-blue-900">Vital Signs Monitoring</h4>
+          <button
+            onClick={() => setShowVitals(!showVitals)}
+            className="text-sm text-blue-600 hover:underline"
+          >
+            {showVitals ? 'Hide Details' : 'Show Details'}
+          </button>
+        </div>
+        {showVitals && (
+          <div className="space-y-2 mt-3">
+            <div className="flex items-start gap-2 text-sm text-blue-800">
+              <HeartPulse className="w-4 h-4 mt-1 flex-shrink-0" />
+              <span>Monitor heart rate - seek help if racing or irregular</span>
+            </div>
+            {(currentPhase === 'peak' || currentPhase === 'onset') && (
+              <div className="flex items-start gap-2 text-sm text-blue-800">
+                <Timer className="w-4 h-4 mt-1 flex-shrink-0" />
+                <span>Check temperature - stay cool and hydrated</span>
+              </div>
+            )}
+            {currentPhase === 'peak' && (
+              <div className="flex items-start gap-2 text-sm text-blue-800">
+                <AlertTriangle className="w-4 h-4 mt-1 flex-shrink-0" />
+                <span>Monitor breathing - seek help if shallow or difficult</span>
+              </div>
+            )}
           </div>
         )}
       </div>
