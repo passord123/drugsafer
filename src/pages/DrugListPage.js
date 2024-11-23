@@ -137,68 +137,55 @@ const DrugListPage = () => {
           Select any drug to view detailed information and record doses.
         </p>
       </div>
-
+  
       {drugs.length === 0 ? (
-        <div className="text-center mb-8">
+        <div className="flex flex-col items-center justify-center py-12">
           <Link
             to="/add"
-            className="inline-flex items-center px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+            className="inline-flex items-center px-8 py-4 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-lg"
           >
-            <Plus className="w-5 h-5 mr-2" />
+            <Plus className="w-6 h-6 mr-2" />
             Add Your First Drug
           </Link>
         </div>
-      ) : null}
-
-      <div className="grid lg:grid-cols-2 gap-8">
-        <div className="space-y-6">
-          <div className="bg-white rounded-xl shadow-sm p-6">
-            {enhancedDrugs.length > 0 ? (
+      ) : (
+        <div className="grid lg:grid-cols-2 gap-8">
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl shadow-sm p-6">
               <DrugList
                 drugs={enhancedDrugs}
                 onDelete={handleDelete}
                 onSelect={setSelectedDrug}
                 selectedDrug={selectedDrug}
               />
-            ) : (
-              <div className="text-center py-12">
-                <p className="text-gray-500 mb-6">No drugs found</p>
-                <Link
-                  to="/add"
-                  className="inline-flex items-center px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  <Plus className="w-5 h-5 mr-2" />
-                  Add Your First Drug
-                </Link>
+            </div>
+  
+            {selectedDrug && drugs.length > 1 && (
+              <div className="bg-white rounded-xl shadow-sm p-6">
+                <InteractionChecker
+                  currentMedication={selectedDrug}
+                  allMedications={drugs}
+                />
               </div>
             )}
           </div>
-
-          {selectedDrug && drugs.length > 1 && (
-            <div className="bg-white rounded-xl shadow-sm p-6">
-              <InteractionChecker
-                currentMedication={selectedDrug}
-                allMedications={drugs}
-              />
-            </div>
+  
+          {selectedDrug && (
+            <ScrollIntoView
+              active={Boolean(selectedDrug)}
+              dependency={selectedDrug.id}
+            >
+              <div className="bg-white rounded-xl shadow-sm">
+                <DrugTracker
+                  drug={selectedDrug}
+                  onRecordDose={handleRecordDose}
+                  onUpdateSettings={handleUpdateSettings}
+                />
+              </div>
+            </ScrollIntoView>
           )}
         </div>
-
-        {selectedDrug && (
-          <ScrollIntoView
-            active={Boolean(selectedDrug)}
-            dependency={selectedDrug.id}
-          >
-            <div className="bg-white rounded-xl shadow-sm">
-              <DrugTracker
-                drug={selectedDrug}
-                onRecordDose={handleRecordDose}
-                onUpdateSettings={handleUpdateSettings}
-              />
-            </div>
-          </ScrollIntoView>
-        )}
-      </div>
+      )}
     </div>
   );
 };
