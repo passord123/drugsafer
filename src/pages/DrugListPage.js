@@ -11,19 +11,16 @@ const DrugListPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [drugs, setDrugs] = useState([]);
 
-
   useEffect(() => {
     const loadDrugs = () => {
       const savedDrugs = localStorage.getItem('drugs');
       if (savedDrugs) {
         const parsedDrugs = JSON.parse(savedDrugs);
-        console.log('Loaded drugs:', parsedDrugs); // Add this line
         setDrugs(parsedDrugs);
       }
     };
 
     loadDrugs();
-    // Add event listener for storage changes
     window.addEventListener('storage', loadDrugs);
     return () => window.removeEventListener('storage', loadDrugs);
   }, []);
@@ -68,26 +65,14 @@ const DrugListPage = () => {
   };
 
   const handleRecordDose = (drugId, updatedDrug) => {
-    // Update localStorage
     const updatedDrugs = drugs.map(drug =>
       drug.id === drugId ? updatedDrug : drug
     );
     localStorage.setItem('drugs', JSON.stringify(updatedDrugs));
-
-    // Update state
     setDrugs(updatedDrugs);
     if (selectedDrug?.id === drugId) {
       setSelectedDrug(updatedDrug);
     }
-  };
-  const calculateDoseStatus = (doseTime, previousDoseTime, minTimeBetweenDoses) => {
-    if (!previousDoseTime) return 'normal';
-    const doseDate = new Date(doseTime);
-    const prevDose = new Date(previousDoseTime);
-    const hoursBetween = (doseDate - prevDose) / (1000 * 60 * 60);
-    if (hoursBetween < minTimeBetweenDoses / 2) return 'early';
-    if (hoursBetween < minTimeBetweenDoses) return 'warning';
-    return 'normal';
   };
 
   const filteredDrugs = drugs.filter(drug =>
@@ -95,8 +80,28 @@ const DrugListPage = () => {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {/* ... other JSX ... */}
+    <div className="max-w-7xl mx-auto">
+      {/* Title Section */}
+      <div className="mb-8 text-center">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">My Drug List</h1>
+        <p className="text-gray-600 max-w-2xl mx-auto">
+          Track your substances, monitor doses, and stay safe with timing recommendations.
+          Select any drug to view detailed information and record doses.
+        </p>
+      </div>
+
+      {/* Quick Actions */}
+      {drugs.length === 0 ? (
+        <div className="text-center mb-8">
+          <Link
+            to="/add"
+            className="inline-flex items-center px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
+          >
+            <Plus className="w-5 h-5 mr-2" />
+            Add Your First Drug
+          </Link>
+        </div>
+      ) : null}
 
       <div className="grid lg:grid-cols-2 gap-8">
         <div className="space-y-6">
@@ -135,7 +140,7 @@ const DrugListPage = () => {
         {selectedDrug && (
           <ScrollIntoView
             active={Boolean(selectedDrug)}
-            dependency={selectedDrug.id} // Add this line
+            dependency={selectedDrug.id}
           >
             <div className="bg-white rounded-xl shadow-sm">
               <DrugTracker

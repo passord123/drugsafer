@@ -2,14 +2,24 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Add to index.css */
+@layer utilities {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
 @layer components {
   .modal-overlay {
-    @apply fixed inset-0 bg-black bg-opacity-50 z-50;
+    @apply fixed inset-0 bg-black bg-opacity-50 z-[100];
   }
 
   .modal-content {
-    @apply fixed bg-white z-50 overflow-hidden
+    @apply fixed bg-white z-[100] overflow-hidden
            flex flex-col max-h-[90vh]
            sm:max-w-lg sm:mx-auto sm:rounded-lg;
   }
@@ -51,5 +61,28 @@
   .btn-secondary {
     @apply px-4 py-2 bg-gray-100 text-gray-700 rounded-lg 
            hover:bg-gray-200 transition-colors;
+  }
+
+  /* Navigation specific utilities */
+  .nav-desktop {
+    @apply hidden lg:flex fixed top-0 left-0 right-0 h-16 
+           bg-white border-b z-40 items-center;
+  }
+
+  .nav-mobile-bottom {
+    @apply lg:hidden fixed bottom-0 left-0 right-0 
+           bg-white border-t z-30;
+  }
+
+  .nav-link {
+    @apply flex items-center gap-2 p-2 rounded-lg transition-colors;
+  }
+
+  .nav-link-active {
+    @apply bg-blue-50 text-blue-600;
+  }
+
+  .nav-link-inactive {
+    @apply text-gray-600 hover:bg-gray-50;
   }
 }

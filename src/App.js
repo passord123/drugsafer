@@ -1,8 +1,6 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AlertProvider } from './contexts/AlertContext/AlertProvider';
-import MobileOptimizedLayout from './components/layout/MobileOptimizedLayout';
-
 
 // Import pages
 import HomePage from './pages/HomePage';
@@ -13,48 +11,50 @@ import MedicationStats from './pages/MedicationStats';
 // Import components
 import ResponsiveNav from './components/ResponsiveNav';
 
-
-// Import icons
-import { AlertTriangle, PlusCircle, List, Home, BarChart } from 'lucide-react';
-
-// NavLink component
-const NavLink = ({ to, icon: Icon, children }) => {
-  const location = useLocation();
-  const isActive = location.pathname === to;
-
+// Main App Layout Component
+const AppLayout = ({ children }) => {
   return (
-    <Link
-      to={to}
-      className={`flex items-center space-x-2 px-4 py-2 rounded-lg transition-colors
-        ${isActive
-          ? 'bg-blue-50 text-blue-600'
-          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-        }`}
-    >
-      <Icon className="w-5 h-5" />
-      <span className="font-medium">{children}</span>
-    </Link>
+    <div className="min-h-screen flex flex-col bg-gray-50">
+      <ResponsiveNav />
+      
+      {/* Main Content Area with responsive padding */}
+      <main className="flex-1 w-full pt-16 pb-16 lg:pt-24 lg:pb-0">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          {children}
+        </div>
+      </main>
+
+      {/* Footer - hidden on mobile, always at bottom on desktop */}
+      <footer className="hidden lg:block bg-white border-t mt-auto">
+        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+          <p className="text-sm text-gray-500">
+            DrugSafe - For harm reduction
+          </p>
+          <p className="text-sm text-gray-500">
+            Use at your own risk
+          </p>
+        </div>
+      </footer>
+
+      {/* Spacer for mobile bottom navigation */}
+      <div className="h-16 lg:hidden" />
+    </div>
   );
 };
 
+// Main App Component
 const App = () => {
   return (
     <AlertProvider>
       <Router>
-        <div className="min-h-screen bg-gray-50 pt-0 lg:pt-16">
-          <ResponsiveNav />
-          {/* Main Content */}
-          <div className="pb-16 lg:pb-0">
-            <MobileOptimizedLayout>
-              <Routes>
-                <Route path="/" element={<HomePage />} />
-                <Route path="/drugs" element={<DrugListPage />} />
-                <Route path="/add" element={<AddDrugPage />} />
-                <Route path="/stats" element={<MedicationStats />} />
-              </Routes>
-            </MobileOptimizedLayout>
-          </div>
-        </div>
+        <AppLayout>
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/drugs" element={<DrugListPage />} />
+            <Route path="/add" element={<AddDrugPage />} />
+            <Route path="/stats" element={<MedicationStats />} />
+          </Routes>
+        </AppLayout>
       </Router>
     </AlertProvider>
   );

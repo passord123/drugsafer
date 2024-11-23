@@ -19,11 +19,7 @@ const ResponsiveNav = () => {
       <Link
         to={to}
         onClick={onClick}
-        className={`flex items-center gap-2 p-2 rounded-lg transition-colors
-          ${isActive 
-            ? 'bg-blue-50 text-blue-600' 
-            : 'text-gray-600 hover:bg-gray-50'
-          }`}
+        className={`nav-link ${isActive ? 'nav-link-active' : 'nav-link-inactive'}`}
       >
         <Icon className="w-5 h-5" />
         <span className="font-medium">{children}</span>
@@ -33,34 +29,40 @@ const ResponsiveNav = () => {
 
   return (
     <>
-      {/* Top Header - Always visible on mobile and desktop */}
-      <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b z-50">
-        <div className="max-w-7xl mx-auto px-4 h-full flex items-center justify-between">
+      {/* Desktop Navigation */}
+      <nav className="nav-desktop">
+        <div className="max-w-7xl mx-auto px-4 w-full flex justify-between items-center">
           <Link to="/" className="flex items-center gap-2">
             <AlertTriangle className="w-6 h-6 text-blue-500" />
             <span className="text-lg font-bold">DrugSafe</span>
           </Link>
-          
-          {/* Desktop Navigation */}
-          <div className="hidden lg:flex gap-4">
+          <div className="flex gap-4">
             {navItems.map(({ path, icon: Icon, label }) => (
               <NavLink key={path} to={path} icon={Icon}>{label}</NavLink>
             ))}
           </div>
+        </div>
+      </nav>
 
-          {/* Mobile Menu Button */}
+      {/* Mobile Header */}
+      <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b z-40 px-4">
+        <div className="h-full flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2">
+            <AlertTriangle className="w-6 h-6 text-blue-500" />
+            <span className="text-lg font-bold">DrugSafe</span>
+          </Link>
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
-            className="p-2 lg:hidden hover:bg-gray-100 rounded-lg"
+            className="p-2 hover:bg-gray-100 rounded-lg"
           >
             {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </header>
 
-      {/* Mobile Dropdown Menu */}
+      {/* Mobile Menu Overlay */}
       {isMenuOpen && (
-        <div className="lg:hidden fixed inset-0 z-40 bg-white pt-16">
+        <div className="lg:hidden fixed inset-0 z-30 bg-white pt-16">
           <nav className="p-4 space-y-2">
             {navItems.map(({ path, icon: Icon, label }) => (
               <NavLink 
@@ -77,7 +79,7 @@ const ResponsiveNav = () => {
       )}
 
       {/* Mobile Bottom Navigation */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-30">
+      <nav className="nav-mobile-bottom">
         <div className="grid grid-cols-4 h-16">
           {navItems.map(({ path, icon: Icon, label }) => (
             <Link
