@@ -14,8 +14,8 @@ const MobileOptimizedLayout = ({ children }) => {
   ];
 
   return (
-    <>
-      {/* Mobile Header */}
+    <div className="min-h-screen bg-gray-50">
+      {/* Fixed Header */}
       <header className="fixed top-0 left-0 right-0 h-16 bg-white border-b z-50">
         <div className="px-4 h-full flex items-center justify-between">
           <Link to="/" className="flex items-center space-x-2">
@@ -54,12 +54,12 @@ const MobileOptimizedLayout = ({ children }) => {
         </div>
       )}
 
-      {/* Main Content */}
-      <div className="min-h-screen bg-gray-50">
-        <div className="pt-16 pb-16">
+      {/* Main Content with padding for header and bottom nav */}
+      <main className="pt-16 pb-16">
+        <div className="max-w-7xl mx-auto">
           {children}
         </div>
-      </div>
+      </main>
 
       {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-white border-t z-40">
@@ -78,7 +78,7 @@ const MobileOptimizedLayout = ({ children }) => {
           ))}
         </div>
       </nav>
-    </>
+    </div>
   );
 };
 

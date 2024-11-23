@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation } from 'react-router-dom';
 import { AlertProvider } from './contexts/AlertContext/AlertProvider';
+import MobileOptimizedLayout from './components/layout/MobileOptimizedLayout';
 
 
 // Import pages
@@ -40,18 +41,20 @@ const App = () => {
   return (
     <AlertProvider>
       <Router>
-      <div className="min-h-screen bg-gray-50 pt-0 lg:pt-16">
-      <ResponsiveNav />
+        <div className="min-h-screen bg-gray-50 pt-0 lg:pt-16">
+          <ResponsiveNav />
           {/* Main Content */}
           <div className="pb-16 lg:pb-0">
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/drugs" element={<DrugListPage />} />
-              <Route path="/add" element={<AddDrugPage />} />
-              <Route path="/stats" element={<MedicationStats />} />
-            </Routes>
-            </div>
+            <MobileOptimizedLayout>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/drugs" element={<DrugListPage />} />
+                <Route path="/add" element={<AddDrugPage />} />
+                <Route path="/stats" element={<MedicationStats />} />
+              </Routes>
+            </MobileOptimizedLayout>
           </div>
+        </div>
       </Router>
     </AlertProvider>
   );
