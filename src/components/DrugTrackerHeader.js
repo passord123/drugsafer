@@ -18,20 +18,17 @@ const DrugTrackerHeader = ({
     
     let timeStr;
     if (diffHours < 24) {
-      timeStr = `Today at ${date.toLocaleTimeString([], { 
+      timeStr = `Today ${date.toLocaleTimeString([], { 
         hour: '2-digit', 
         minute: '2-digit' 
       })}`;
     } else if (diffHours < 48) {
-      timeStr = `Yesterday at ${date.toLocaleTimeString([], { 
+      timeStr = `Yesterday ${date.toLocaleTimeString([], { 
         hour: '2-digit', 
         minute: '2-digit' 
       })}`;
     } else {
-      timeStr = `${date.toLocaleDateString()} at ${date.toLocaleTimeString([], { 
-        hour: '2-digit', 
-        minute: '2-digit' 
-      })}`;
+      timeStr = date.toLocaleDateString();
     }
 
     return { time: timeStr, dose: doseAmount };
@@ -58,7 +55,7 @@ const DrugTrackerHeader = ({
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 gap-4 mt-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
         {/* History Button */}
         <button
           onClick={onOpenHistory}
@@ -67,7 +64,7 @@ const DrugTrackerHeader = ({
                    border border-blue-200"
         >
           <History className="w-5 h-5 flex-shrink-0" />
-          <div className="text-left min-w-0">
+          <div className="text-left">
             <div className="font-medium">View History</div>
             <div className="text-sm">
               {drug.doses?.length || 0} total doses
@@ -76,18 +73,18 @@ const DrugTrackerHeader = ({
         </button>
 
         {/* Last Dose Timer */}
-        <div className="p-4 bg-gray-50 text-gray-700 rounded-lg border border-gray-200">
-          <div className="flex items-center gap-3 mb-1">
+        <div className="relative p-4 bg-gray-50 text-gray-700 rounded-lg border border-gray-200">
+          <div className="flex items-center gap-2 mb-2">
             <Clock className="w-5 h-5 text-gray-500 flex-shrink-0" />
             <div className="font-medium">Last Dose</div>
           </div>
-          <div className="ml-8 space-y-0.5">
-            <div className="text-sm truncate">
+          <div className="space-y-1 pl-7">
+            <div className="text-sm text-gray-600">
               {lastDoseInfo.time}
             </div>
             {lastDoseInfo.dose && (
               <div className="text-sm font-medium text-gray-900">
-                {lastDoseInfo.dose}
+                Amount: {lastDoseInfo.dose}
               </div>
             )}
           </div>
