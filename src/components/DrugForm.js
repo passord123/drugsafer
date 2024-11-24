@@ -404,6 +404,7 @@ const DrugForm = ({ onAdd, defaultDrugs = [] }) => {
               <p className="text-red-800">{selectedDrug.warnings}</p>
             </div>
           )}
+          
         </div>
 
         <div className="sticky bottom-0 bg-white border-t p-4 flex gap-2">
