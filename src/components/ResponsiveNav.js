@@ -25,15 +25,17 @@ const ResponsiveNav = () => {
             : 'text-gray-600 hover:text-gray-900'
         }`}
       >
-        <Icon className="w-5 h-5" />
-        <span className="font-medium">{children}</span>
+        {Icon && <Icon className="w-5 h-5" />}
+        <span className={`font-medium ${className?.includes('flex-col') ? 'text-xs' : ''}`}>
+          {children}
+        </span>
       </Link>
     );
   };
 
   return (
     <>
-      {/* Desktop Navigation */}
+      {/* Desktop Navigation - hidden on mobile */}
       <nav className="hidden lg:flex fixed top-0 left-0 right-0 h-16 bg-white border-b z-40">
         <div className="max-w-7xl mx-auto px-4 w-full flex justify-between items-center">
           <Link to="/" className="flex items-center gap-2">
@@ -55,7 +57,7 @@ const ResponsiveNav = () => {
         </div>
       </nav>
 
-      {/* Mobile Header */}
+      {/* Mobile Header - visible only on mobile */}
       <header className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b z-40 px-4">
         <div className="h-full flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2">
@@ -90,27 +92,24 @@ const ResponsiveNav = () => {
         </div>
       )}
 
-      {/* Mobile Bottom Navigation */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-30">
-        <div className="grid grid-cols-4 h-16">
+      {/* Mobile Bottom Navigation - visible only on mobile */}
+      <nav className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t z-30 h-16">
+        <div className="grid grid-cols-4">
           {navItems.map(({ path, icon: Icon, label }) => (
-            <Link
+            <NavLink
               key={path}
               to={path}
-              className="flex flex-col items-center justify-center gap-1"
+              icon={Icon}
+              className="flex flex-col items-center justify-center h-16 gap-1"
             >
-              <Icon className={`w-5 h-5 ${
-                location.pathname === path ? 'text-blue-500' : 'text-gray-600'
-              }`} />
-              <span className="text-xs">{
-                location.pathname === path ? 'text-blue-500' : 'text-gray-600'
-              }
-                {label}
-              </span>
-            </Link>
+              {label}
+            </NavLink>
           ))}
         </div>
       </nav>
+
+      {/* Mobile bottom spacing to prevent content from being hidden */}
+      <div className="lg:hidden h-16" />
     </>
   );
 };
