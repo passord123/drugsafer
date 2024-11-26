@@ -1,186 +1,371 @@
+// Core phase definitions and styling
+export const timingPhases = {
+  onset: {
+    color: 'bg-yellow-500',
+    bgColor: 'bg-yellow-50 border-yellow-200 text-yellow-700',
+    message: 'Initial effects - Monitor carefully',
+    vitals: ['heartRate', 'anxiety']
+  },
+  comeup: {
+    color: 'bg-purple-500',
+    bgColor: 'bg-purple-50 border-purple-200 text-purple-700',
+    message: 'Effects building - Find safe space',
+    vitals: ['heartRate', 'temperature'] 
+  },
+  peak: {
+    color: 'bg-red-500',
+    bgColor: 'bg-red-50 border-red-200 text-red-700',
+    message: 'Maximum effects - No redosing',
+    vitals: ['heartRate', 'temperature', 'breathing']
+  },
+  offset: {
+    color: 'bg-orange-500',
+    bgColor: 'bg-orange-50 border-orange-200 text-orange-700', 
+    message: 'Effects reducing - Rest & recover',
+    vitals: ['heartRate']
+  },
+  afterglow: {
+    color: 'bg-blue-500', 
+    bgColor: 'bg-blue-50 border-blue-200 text-blue-700',
+    message: 'After-effects - Take it easy',
+    vitals: []
+  },
+  finished: {
+    color: 'bg-green-500',
+    bgColor: 'bg-green-50 border-green-200 text-green-700',
+    message: 'Effects minimal - Safe to rest',
+    vitals: []
+  }
+};
+
+// Complete timing profiles for all substances
 export const timingProfiles = {
   // Benzodiazepines
   'alprazolam': {
-    onset: { duration: 15, intensity: 'moderate' },
-    comeup: { duration: 50, intensity: 'mild' },
-    peak: { duration: 60, intensity: 'high' },
-    offset: { duration: 120, intensity: 'moderate' },
-    total: function () {
-      return this.onset.duration + this.comeup.duration + this.peak.duration + this.offset.duration;
+    onset: { 
+      duration: 15, 
+      intensity: 'moderate',
+      safetyInfo: "Initial calming effects beginning. Stay in a safe environment."
+    },
+    comeup: { 
+      duration: 50, 
+      intensity: 'mild',
+      safetyInfo: "Effects building. Find a calm environment."
+    },
+    peak: { 
+      duration: 60, 
+      intensity: 'high',
+      safetyInfo: "Strong sedation likely. Do not drive or operate machinery."
+    },
+    offset: { 
+      duration: 120, 
+      intensity: 'moderate',
+      safetyInfo: "Effects still strong. Avoid additional doses."
+    },
+    afterglow: {
+      duration: 240,
+      intensity: 'mild',
+      safetyInfo: "You may still be impaired. Get rest."
+    },
+    total: function() {
+      return this.onset.duration + 
+             this.comeup.duration + 
+             this.peak.duration + 
+             this.offset.duration +
+             (this.afterglow?.duration || 0);
     },
     safetyInfo: {
-      comeup: "Initial calming effects beginning. Stay in a safe environment.",
-      onset: "Effects building. Find a calm environment.",
-      peak: "Strong sedation likely. Do not drive or operate machinery.",
-      offset: "Effects still strong. Avoid additional doses.",
-      afterglow: "You may still be impaired. Get rest.",
-      safe: "Safe to take prescribed dose if needed."
+      general: "Highly addictive. Do not mix with other depressants.",
+      breathing: "Monitor breathing rate",
+      vitals: ["breathing rate", "consciousness level"]
     }
   },
 
   'diazepam': {
-    onset: { duration: 30, intensity: 'moderate' },
-    comeup: { duration: 15, intensity: 'mild' },
-    peak: { duration: 120, intensity: 'moderate' },
-    offset: { duration: 480, intensity: 'moderate' },
-    total: function () {
-      return this.onset.duration + this.comeup.duration + this.peak.duration + this.offset.duration;
+    onset: { 
+      duration: 30, 
+      intensity: 'moderate',
+      safetyInfo: "Initial relaxation beginning. Find a comfortable setting."
+    },
+    comeup: { 
+      duration: 15, 
+      intensity: 'mild',
+      safetyInfo: "Effects building gradually. Stay in a comfortable setting."
+    },
+    peak: { 
+      duration: 120, 
+      intensity: 'moderate',
+      safetyInfo: "Moderate sedation expected. No driving."
+    },
+    offset: { 
+      duration: 480, 
+      intensity: 'moderate',
+      safetyInfo: "Long-acting effects continue. Stay hydrated."
+    },
+    afterglow: {
+      duration: 720,
+      intensity: 'mild',
+      safetyInfo: "Effects may persist. Rest recommended."
+    },
+    total: function() {
+      return this.onset.duration + 
+             this.comeup.duration + 
+             this.peak.duration + 
+             this.offset.duration +
+             (this.afterglow?.duration || 0);
     },
     safetyInfo: {
-      comeup: "Initial relaxation beginning. Find a comfortable setting.",
-      onset: "Effects building gradually. Stay in a comfortable setting.",
-      peak: "Moderate sedation expected. No driving.",
-      offset: "Long-acting effects continue. Stay hydrated.",
-      afterglow: "Effects may persist. Rest recommended.",
-      safe: "Safe for prescribed dose if needed."
+      general: "Long-acting benzo. Avoid alcohol and other depressants.",
+      breathing: "Monitor breathing rate",
+      vitals: ["breathing rate", "consciousness level"]
     }
   },
 
   // Stimulants
   'mdma': {
-    onset: { duration: 30, intensity: 'moderate' },
-    comeup: { duration: 20, intensity: 'moderate' },
-    peak: { duration: 120, intensity: 'very high' },
-    offset: { duration: 180, intensity: 'high' },
-    total: function () {
-      return this.onset.duration + this.comeup.duration + this.peak.duration + this.offset.duration;
+    onset: { 
+      duration: 30, 
+      intensity: 'moderate',
+      safetyInfo: "Initial effects starting. Find comfortable temperature. Anxiety normal."
+    },
+    comeup: { 
+      duration: 20, 
+      intensity: 'moderate',
+      safetyInfo: "Effects building. Stay hydrated but don't overdrink."
+    },
+    peak: { 
+      duration: 120, 
+      intensity: 'very high',
+      safetyInfo: "Strong effects. Take breaks from dancing. Monitor temperature."
+    },
+    offset: { 
+      duration: 180, 
+      intensity: 'high',
+      safetyInfo: "Continue hydration. Watch for overheating."
+    },
+    afterglow: {
+      duration: 360,
+      intensity: 'mild',
+      safetyInfo: "Rest and recover. Supplement with vitamins if available."
+    },
+    total: function() {
+      return this.onset.duration + 
+             this.comeup.duration + 
+             this.peak.duration + 
+             this.offset.duration +
+             (this.afterglow?.duration || 0);
     },
     safetyInfo: {
-      comeup: "Initial effects starting. Find comfortable temperature. Anxiety normal.",
-      onset: "Effects building. Stay hydrated but don't overdrink.",
-      peak: "Strong effects. Take breaks from dancing. Monitor temperature.",
-      offset: "Continue hydration. Watch for overheating.",
-      afterglow: "Rest and recover. Supplement with vitamins if available.",
-      safe: "Wait 6-8 weeks before next use for safety."
+      general: "Wait 6-8 weeks between uses. Test your substances.",
+      hydration: "Sip water regularly - 500ml/hour max",
+      temperature: "Take regular cool-down breaks",
+      vitals: ["heart rate", "temperature", "hydration"]
     }
   },
 
   'kokain': {
-    onset: { duration: 1, intensity: 'high' },
-    comeup: { duration: 10, intensity: 'high' },
-    peak: { duration: 20, intensity: 'very high' },
-    offset: { duration: 20, intensity: 'moderate' },
-    total: function () {
-      return this.onset.duration + this.comeup.duration + this.peak.duration + this.offset.duration;
+    onset: { 
+      duration: 1, 
+      intensity: 'high',
+      safetyInfo: "Rapid onset beginning. Check heart rate."
+    },
+    comeup: { 
+      duration: 10, 
+      intensity: 'high',
+      safetyInfo: "Effects coming on quickly. Monitor heart rate."
+    },
+    peak: { 
+      duration: 20, 
+      intensity: 'very high',
+      safetyInfo: "Intense stimulation. Watch for anxiety."
+    },
+    offset: { 
+      duration: 20, 
+      intensity: 'moderate',
+      safetyInfo: "Avoid redosing too frequently."
+    },
+    afterglow: {
+      duration: 60,
+      intensity: 'mild',
+      safetyInfo: "Coming down. Don't chase the high."
+    },
+    total: function() {
+      return this.onset.duration + 
+             this.comeup.duration + 
+             this.peak.duration + 
+             this.offset.duration +
+             (this.afterglow?.duration || 0);
     },
     safetyInfo: {
-      comeup: "Rapid onset beginning. Check heart rate.",
-      onset: "Effects coming on quickly. Monitor heart rate.",
-      peak: "Intense stimulation. Watch for anxiety.",
-      offset: "Avoid redosing too frequently.",
-      afterglow: "Coming down. Don't chase the high.",
-      safe: "Wait at least 1 hour between doses."
+      general: "High addiction potential. Monitor heart.",
+      heartRate: "Watch for irregular heartbeat",
+      temperature: "Stay cool and hydrated",
+      vitals: ["heart rate", "chest pain", "anxiety"]
     }
   },
 
   'amfetamin': {
-    onset: { duration: 20, intensity: 'moderate' },
-    comeup: { duration: 15, intensity: 'moderate' },
-    peak: { duration: 180, intensity: 'high' },
-    offset: { duration: 360, intensity: 'moderate' },
-    total: function () {
-      return this.onset.duration + this.comeup.duration + this.peak.duration + this.offset.duration;
+    onset: { 
+      duration: 20, 
+      intensity: 'moderate',
+      safetyInfo: "Initial stimulation starting. Stay calm."
+    },
+    comeup: { 
+      duration: 15, 
+      intensity: 'moderate',
+      safetyInfo: "Effects building. Stay calm and hydrated."
+    },
+    peak: { 
+      duration: 180, 
+      intensity: 'high',
+      safetyInfo: "Strong stimulation. Monitor heart rate."
+    },
+    offset: { 
+      duration: 360, 
+      intensity: 'moderate',
+      safetyInfo: "Maintain hydration. Eat if possible."
+    },
+    afterglow: {
+      duration: 240,
+      intensity: 'mild',
+      safetyInfo: "Rest and recover. Food and hydration important."
+    },
+    total: function() {
+      return this.onset.duration + 
+             this.comeup.duration + 
+             this.peak.duration + 
+             this.offset.duration +
+             (this.afterglow?.duration || 0);
     },
     safetyInfo: {
-      comeup: "Initial stimulation starting. Stay calm.",
-      onset: "Effects building. Stay calm and hydrated.",
-      peak: "Strong stimulation. Monitor heart rate.",
-      offset: "Maintain hydration. Eat if possible.",
-      afterglow: "Rest and recover. Food and hydration important.",
-      safe: "Wait 24 hours before redosing."
+      general: "Monitor heart rate and temperature",
+      hydration: "Stay hydrated but don't overdo it",
+      food: "Try to eat even if not hungry",
+      vitals: ["heart rate", "temperature", "hydration"]
     }
   },
 
   'metylfenidat': {
-    onset: { duration: 60, intensity: 'moderate' },
-    comeup: { duration: 30, intensity: 'moderate' },
-    peak: { duration: 120, intensity: 'moderate' },
-    offset: { duration: 240, intensity: 'moderate' },
-    total: function () {
-      return this.onset.duration + this.comeup.duration + this.peak.duration + this.offset.duration;
+    onset: { 
+      duration: 60, 
+      intensity: 'moderate',
+      safetyInfo: "Gradual onset. Maintain normal routine."
+    },
+    comeup: { 
+      duration: 30, 
+      intensity: 'moderate',
+      safetyInfo: "Effects building gradually."
+    },
+    peak: { 
+      duration: 120, 
+      intensity: 'moderate',
+      safetyInfo: "Moderate stimulation. Don't exceed prescribed dose."
+    },
+    offset: { 
+      duration: 240, 
+      intensity: 'moderate',
+      safetyInfo: "Effects steady. Stay hydrated."
+    },
+    afterglow: {
+      duration: 120,
+      intensity: 'mild',
+      safetyInfo: "Effects diminishing. Avoid late doses."
+    },
+    total: function() {
+      return this.onset.duration + 
+             this.comeup.duration + 
+             this.peak.duration + 
+             this.offset.duration +
+             (this.afterglow?.duration || 0);
     },
     safetyInfo: {
-      onset: "Gradual onset. Maintain normal routine.",
-      comeup: "Gradual onset. Maintain normal routine.",
-      peak: "Moderate stimulation. Don't exceed prescribed dose.",
-      offset: "Effects steady. Stay hydrated.",
-      afterglow: "Effects diminishing. Avoid late doses.",
-      safe: "Follow prescribed dosing schedule."
-    }
-  },
-
-  // Psychedelics
-  'lsd': {
-    onset: { duration: 60, intensity: 'moderate' },
-    comeup: { duration: 30, intensity: 'mild' },
-    peak: { duration: 240, intensity: 'very high' },
-    offset: { duration: 360, intensity: 'high' },
-    total: function () {
-      return this.onset.duration + this.comeup.duration + this.peak.duration + this.offset.duration;
-    },
-    safetyInfo: {
-      comeup: "First alerts. Anxiety normal. Find comfortable setting.",
-      onset: "Effects building gradually. Get comfortable.",
-      peak: "Strong psychedelic effects. Stay with trusted people.",
-      offset: "Extended effects. Stay in safe environment.",
-      afterglow: "Integration phase. Rest and reflect.",
-      safe: "Wait at least 2 weeks before next use."
-    }
-  },
-
-  'psilocybin': {
-    onset: { duration: 30, intensity: 'moderate' },
-    comeup: { duration: 20, intensity: 'moderate' },
-    peak: { duration: 120, intensity: 'high' },
-    offset: { duration: 180, intensity: 'moderate' },
-    total: function () {
-      return this.onset.duration + this.comeup.duration + this.peak.duration + this.offset.duration;
-    },
-    safetyInfo: {
-      comeup: "First effects. Nausea normal. Stay seated.",
-      onset: "Effects building. Nausea common.",
-      peak: "Strong effects. Remain in safe space.",
-      offset: "Effects reducing. Stay grounded.",
-      afterglow: "Gentle return. Integration important.",
-      safe: "Wait 2 weeks minimum before next use."
+      general: "Follow prescribed dosing schedule",
+      heartRate: "Monitor if feeling anxious",
+      sleep: "Avoid taking too late in day",
+      vitals: ["heart rate", "sleep quality"]
     }
   },
 
   // Dissociatives
   'ketamin': {
-    onset: { duration: 2, intensity: 'high' },
-    comeup: { duration: 10, intensity: 'high' },
-    peak: { duration: 30, intensity: 'very high' },
-    offset: { duration: 30, intensity: 'moderate' },
-    total: function () {
-      return this.onset.duration + this.comeup.duration + this.peak.duration + this.offset.duration;
+    onset: { 
+      duration: 2, 
+      intensity: 'high',
+      safetyInfo: "Effects begin rapidly. Sit or lie down."
+    },
+    comeup: { 
+      duration: 10, 
+      intensity: 'high',
+      safetyInfo: "Find safe position. Effects come quick."
+    },
+    peak: { 
+      duration: 30, 
+      intensity: 'very high',
+      safetyInfo: "Strong dissociation. Stay seated/lying."
+    },
+    offset: { 
+      duration: 30, 
+      intensity: 'moderate',
+      safetyInfo: "Coordination impaired. Don't move much."
+    },
+    afterglow: {
+      duration: 60,
+      intensity: 'mild',
+      safetyInfo: "Gradual return. Take it slow."
+    },
+    total: function() {
+      return this.onset.duration + 
+             this.comeup.duration + 
+             this.peak.duration + 
+             this.offset.duration +
+             (this.afterglow?.duration || 0);
     },
     safetyInfo: {
-      comeup: "Effects begin rapidly. Sit or lie down.",
-      onset: "Find safe position. Effects come quick.",
-      peak: "Strong dissociation. Stay seated/lying.",
-      offset: "Coordination impaired. Don't move much.",
-      afterglow: "Gradual return. Take it slow.",
-      safe: "Wait 1 hour minimum between doses."
+      general: "Use in safe setting with sitter",
+      position: "Stay seated or lying down",
+      breathing: "Maintain clear airway",
+      vitals: ["breathing", "consciousness"]
     }
   },
 
-  // Default profile for unknown substances
+  // Default profile
   'default': {
-    onset: { duration: 30, intensity: 'moderate' },
-    comeup: { duration: 15, intensity: 'mild' },
-    peak: { duration: 90, intensity: 'high' },
-    offset: { duration: 180, intensity: 'moderate' },
-    total: function () {
-      return this.onset.duration + this.comeup.duration + this.peak.duration + this.offset.duration;
+    onset: { 
+      duration: 30, 
+      intensity: 'moderate',
+      safetyInfo: "Initial effects beginning. Find safe environment."
+    },
+    comeup: { 
+      duration: 15, 
+      intensity: 'mild',
+      safetyInfo: "Monitor effects carefully. Stay safe."
+    },
+    peak: { 
+      duration: 90, 
+      intensity: 'high',
+      safetyInfo: "Peak effects. No additional doses."
+    },
+    offset: { 
+      duration: 180, 
+      intensity: 'moderate',
+      safetyInfo: "Main effects continuing."
+    },
+    afterglow: {
+      duration: 120,
+      intensity: 'mild',
+      safetyInfo: "Effects reducing. Rest advised."
+    },
+    total: function() {
+      return this.onset.duration + 
+             this.comeup.duration + 
+             this.peak.duration + 
+             this.offset.duration +
+             (this.afterglow?.duration || 0);
     },
     safetyInfo: {
-      comeup: "Initial effects beginning. Find safe environment.",
-      onset: "Monitor effects carefully. Stay safe.",
-      peak: "Peak effects. No additional doses.",
-      offset: "Main effects continuing.",
-      afterglow: "Effects reducing. Rest advised.",
-      safe: "Effects should be minimal now."
+      general: "Monitor effects carefully",
+      vitals: ["general wellbeing"],
+      position: "Stay in safe environment"
     }
   }
 };
@@ -188,62 +373,252 @@ export const timingProfiles = {
 // Categories for fallback
 export const categoryProfiles = {
   'Benzodiazepiner': {
-    onset: { duration: 20, intensity: 'moderate' },
-    comeup: { duration: 10, intensity: 'mild' },
-    peak: { duration: 120, intensity: 'high' },
-    offset: { duration: 360, intensity: 'moderate' },
-    total: function () {
-      return this.onset.duration + this.comeup.duration + this.peak.duration + this.offset.duration;
+    onset: { 
+      duration: 20, 
+      intensity: 'moderate',
+      safetyInfo: "Initial calming effects starting. Stay comfortable."
+    },
+    comeup: { 
+      duration: 10, 
+      intensity: 'mild',
+      safetyInfo: "Find safe environment. Effects starting."
+    },
+    peak: { 
+      duration: 120, 
+      intensity: 'high',
+      safetyInfo: "No driving or machinery. Memory affected."
+    },
+    offset: { 
+      duration: 360, 
+      intensity: 'moderate',
+      safetyInfo: "Avoid alcohol and other depressants."
+    },
+    afterglow: {
+      duration: 240,
+      intensity: 'mild',
+      safetyInfo: "Rest and recovery important."
+    },
+    total: function() {
+      return this.onset.duration + 
+             this.comeup.duration + 
+             this.peak.duration + 
+             this.offset.duration +
+             (this.afterglow?.duration || 0);
     },
     safetyInfo: {
-      comeup: "Initial calming effects starting. Stay comfortable.",
-      onset: "Find safe environment. Effects starting.",
-      peak: "No driving or machinery. Memory affected.",
-      offset: "Avoid alcohol and other depressants.",
-      afterglow: "Rest and recovery important.",
-      safe: "Follow prescribed timing."
+      general: "Do not mix with alcohol or opioids",
+      breathing: "Monitor breathing rate",
+      vitals: ["breathing rate", "consciousness"]
     }
   },
 
   'Sentralstimulerende': {
-    onset: { duration: 15, intensity: 'high' },
-    comeup: { duration: 10, intensity: 'moderate' },
-    peak: { duration: 120, intensity: 'very high' },
-    offset: { duration: 240, intensity: 'high' },
-    total: function () {
-      return this.onset.duration + this.comeup.duration + this.peak.duration + this.offset.duration;
+    onset: { 
+      duration: 15, 
+      intensity: 'high',
+      safetyInfo: "Initial stimulation beginning. Stay calm."
+    },
+    comeup: { 
+      duration: 10, 
+      intensity: 'moderate',
+      safetyInfo: "Monitor heart rate. Stay hydrated."
+    },
+    peak: { 
+      duration: 120, 
+      intensity: 'very high',
+      safetyInfo: "Watch temperature. Take breaks."
+    },
+    offset: { 
+      duration: 240, 
+      intensity: 'high',
+      safetyInfo: "Stay cool. Keep hydrating."
+    },
+    afterglow: {
+      duration: 180,
+      intensity: 'mild',
+      safetyInfo: "Rest and recover. Eat if possible."
+    },
+    total: function() {
+      return this.onset.duration + 
+             this.comeup.duration + 
+             this.peak.duration + 
+             this.offset.duration +
+             (this.afterglow?.duration || 0);
     },
     safetyInfo: {
-      comeup: "Initial stimulation beginning. Stay calm.",
-      onset: "Monitor heart rate. Stay hydrated.",
-      peak: "Watch temperature. Take breaks.",
-      offset: "Stay cool. Keep hydrating.",
-      afterglow: "Rest and recover. Eat if possible.",
-      safe: "Wait appropriate time before redose."
+      general: "Monitor heart rate and temperature",
+      hydration: "Regular small sips of water",
+      vitals: ["heart rate", "temperature", "hydration"]
     }
   },
 
   'Opioider': {
-    onset: { duration: 20, intensity: 'high' },
-    comeup: { duration: 10, intensity: 'moderate' },
-    peak: { duration: 90, intensity: 'very high' },
-    offset: { duration: 180, intensity: 'high' },
-    total: function () {
-      return this.onset.duration + this.comeup.duration + this.peak.duration + this.offset.duration;
+    onset: { 
+      duration: 20, 
+      intensity: 'high',
+      safetyInfo: "Effects beginning. Have naloxone ready."
+    },
+    comeup: { 
+      duration: 10, 
+      intensity: 'moderate',
+      safetyInfo: "Never use alone. Have naloxone."
+    },
+    peak: { 
+      duration: 90, 
+      intensity: 'very high',
+      safetyInfo: "High overdose risk. No mixing."
+    },
+    offset: { 
+      duration: 180, 
+      intensity: 'high',
+      safetyInfo: "Monitor breathing. No other depressants."
+    },
+    afterglow: {
+      duration: 240,
+      intensity: 'mild',
+      safetyInfo: "Still dangerous. No alcohol."
+    },
+    total: function() {
+      return this.onset.duration + 
+             this.comeup.duration + 
+             this.peak.duration + 
+             this.offset.duration +
+             (this.afterglow?.duration || 0);
     },
     safetyInfo: {
-      comeup: "Effects beginning. Have naloxone ready.",
-      onset: "Never use alone. Have naloxone.",
-      peak: "High overdose risk. No mixing.",
-      offset: "Monitor breathing. No other depressants.",
-      afterglow: "Still dangerous. No alcohol.",
-      safe: "Wait full duration before redose."
+      general: "Have naloxone available. Never use alone.",
+      breathing: "Monitor breathing rate closely",
+      consciousness: "Check responsiveness regularly",
+      vitals: ["breathing rate", "consciousness", "skin color"]
     }
   }
 };
 
+// Helper functions for phase management
+export const getPhaseInfo = (phase) => {
+  return timingPhases[phase] || timingPhases.onset;
+};
+
+export const getPhaseColor = (phase) => {
+  return timingPhases[phase]?.color || timingPhases.onset.color;
+};
+
+export const getPhaseBgColor = (phase) => {
+  return timingPhases[phase]?.bgColor || timingPhases.onset.bgColor;
+};
+
+export const calculatePhase = (minutesSince, profile) => {
+  if (minutesSince < profile.onset.duration) {
+    return {
+      phase: 'onset',
+      progress: (minutesSince / profile.onset.duration) * 100,
+      timeRemaining: profile.onset.duration - minutesSince
+    };
+  } 
+  
+  const afterOnset = minutesSince - profile.onset.duration;
+  if (afterOnset < profile.comeup.duration) {
+    return {
+      phase: 'comeup',
+      progress: (afterOnset / profile.comeup.duration) * 100,
+      timeRemaining: profile.comeup.duration - afterOnset
+    };
+  }
+  
+  const afterComeup = afterOnset - profile.comeup.duration;
+  if (afterComeup < profile.peak.duration) {
+    return {
+      phase: 'peak',
+      progress: (afterComeup / profile.peak.duration) * 100,
+      timeRemaining: profile.peak.duration - afterComeup
+    };
+  }
+  
+  const afterPeak = afterComeup - profile.peak.duration;
+  if (afterPeak < profile.offset.duration) {
+    return {
+      phase: 'offset',
+      progress: (afterPeak / profile.offset.duration) * 100,
+      timeRemaining: profile.offset.duration - afterPeak
+    };
+  }
+  
+  const afterOffset = afterPeak - profile.offset.duration;
+  if (profile.afterglow && afterOffset < profile.afterglow.duration) {
+    return {
+      phase: 'afterglow',
+      progress: (afterOffset / profile.afterglow.duration) * 100,
+      timeRemaining: profile.afterglow.duration - afterOffset
+    };
+  }
+  
+  return {
+    phase: 'finished',
+    progress: 100,
+    timeRemaining: 0
+  };
+};
+
+// Time formatting and calculation helpers
+export const formatDuration = (minutes) => {
+  if (!minutes) return '0m';
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  if (hours === 0) return `${mins}m`;
+  if (mins === 0) return `${hours}h`;
+  return `${hours}h ${mins}m`;
+};
+
+export const formatTimeRemaining = (timeInMinutes) => {
+  if (!timeInMinutes) return '--:--:--';
+  const hours = Math.floor(timeInMinutes / 60);
+  const minutes = Math.floor(timeInMinutes % 60);
+  const seconds = Math.floor((timeInMinutes % 1) * 60);
+  return `${String(hours).padStart(2, '0')}:${
+    String(minutes).padStart(2, '0')}:${
+    String(seconds).padStart(2, '0')}`;
+};
+
+// Safety monitoring helpers
+export const getVitalSigns = (phase, substance) => {
+  const profile = timingProfiles[substance.toLowerCase()] || 
+                 categoryProfiles[substance] || 
+                 timingProfiles.default;
+                 
+  const phaseInfo = timingPhases[phase];
+  
+  return {
+    required: phaseInfo?.vitals || [],
+    recommendations: profile.safetyInfo?.vitals || [],
+    message: profile[phase]?.safetyInfo || phaseInfo?.message
+  };
+};
+
+export const getSafetyRecommendations = (substance, phase) => {
+  const profile = timingProfiles[substance.toLowerCase()] || 
+                 categoryProfiles[substance] || 
+                 timingProfiles.default;
+  
+  return {
+    phase: profile[phase]?.safetyInfo,
+    general: profile.safetyInfo?.general,
+    vitals: getVitalSigns(phase, substance)
+  };
+};
+
+// Profile lookup helper
 export const getSubstanceProfile = (substance) => {
   return timingProfiles[substance.toLowerCase()] ||
     categoryProfiles[substance] ||
     timingProfiles.default;
+};
+
+export const calculateNextDoseTime = (lastDoseTime, profile) => {
+  if (!lastDoseTime) return null;
+  
+  const totalDuration = profile.total();
+  const safeWaitTime = Math.max(totalDuration, 240); // Minimum 4 hours or total duration
+  
+  const lastDose = new Date(lastDoseTime);
+  return new Date(lastDose.getTime() + (safeWaitTime * 60 * 1000));
 };

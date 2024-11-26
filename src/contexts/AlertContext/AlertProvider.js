@@ -1,57 +1,83 @@
-// src/contexts/AlertContext/AlertProvider.js
 import React, { createContext, useContext, useState, useCallback } from 'react';
 import { AlertTriangle, Info, Check, X } from 'lucide-react';
 
 const AlertContext = createContext(null);
 
+// Constants
 const MAX_ALERTS = 3;
-const ALERT_DURATION = 5000;
-
-const getAlertStyles = (type) => {
-  switch (type) {
-    case 'error':
-      return 'bg-red-50 border-red-200 text-red-700';
-    case 'warning':
-      return 'bg-yellow-50 border-yellow-200 text-yellow-700';
-    case 'success':
-      return 'bg-green-50 border-green-200 text-green-700';
-    default:
-      return 'bg-blue-50 border-blue-200 text-blue-700';
-  }
-};
-
-const getAlertIcon = (type) => {
-  switch (type) {
-    case 'error':
-    case 'warning':
-      return AlertTriangle;
-    case 'success':
-      return Check;
-    default:
-      return Info;
-  }
-};
+const ALERT_DURATION = 5000; // 5 seconds
 
 export const AlertProvider = ({ children }) => {
   const [alerts, setAlerts] = useState([]);
 
-  const addAlert = useCallback((type, message, duration = ALERT_DURATION) => {
-    const id = Date.now();
-    setAlerts(prev => [...prev.slice(-MAX_ALERTS + 1), { id, type, message }]);
-    
-    if (duration !== Infinity) {
-      setTimeout(() => {
-        removeAlert(id);
-      }, duration);
-    }
-  }, []);
-
+  // Define removeAlert first
   const removeAlert = useCallback((id) => {
     setAlerts(prev => prev.filter(alert => alert.id !== id));
   }, []);
 
+  // Then define addAlert using removeAlert
+  const addAlert = useCallback((message, type = 'info') => {
+    const id = Date.now();
+    
+    // Add the new alert
+    setAlerts(prev => [...prev.slice(-MAX_ALERTS + 1), { 
+      id, 
+      type, 
+      message 
+    }]);
+    
+    // Set up auto-removal
+    if (type !== 'error') { // Don't auto-remove error alerts
+      setTimeout(() => {
+        removeAlert(id);
+      }, ALERT_DURATION);
+    }
+
+    return id;
+  }, [removeAlert]); // Include removeAlert in dependencies
+
+  // Specialized alert functions
+  const addDoseWarning = useCallback((message) => {
+    addAlert(message, 'warning');
+  }, [addAlert]);
+
+  const addSafetyAlert = useCallback((message) => {
+    addAlert(message, 'error');
+  }, [addAlert]);
+
+  const getAlertStyles = (type) => {
+    switch (type) {
+      case 'error':
+        return 'bg-red-50 border-red-200 text-red-700';
+      case 'warning':
+        return 'bg-yellow-50 border-yellow-200 text-yellow-700';
+      case 'success':
+        return 'bg-green-50 border-green-200 text-green-700';
+      default:
+        return 'bg-blue-50 border-blue-200 text-blue-700';
+    }
+  };
+
+  const getAlertIcon = (type) => {
+    switch (type) {
+      case 'error':
+        return AlertTriangle;
+      case 'warning':
+        return AlertTriangle;
+      case 'success':
+        return Check;
+      default:
+        return Info;
+    }
+  };
+
   return (
-    <AlertContext.Provider value={{ addAlert, removeAlert }}>
+    <AlertContext.Provider value={{ 
+      addAlert,
+      addDoseWarning,
+      addSafetyAlert,
+      removeAlert
+    }}>
       {children}
       <div className="fixed top-0 right-0 p-4 z-50 space-y-2 pointer-events-none">
         {alerts.map(alert => (
@@ -81,8 +107,10 @@ export const AlertProvider = ({ children }) => {
 
 export const useAlerts = () => {
   const context = useContext(AlertContext);
-  if (context === null) {
+  if (!context) {
     throw new Error('useAlerts must be used within an AlertProvider');
   }
   return context;
 };
+
+export default AlertProvider;

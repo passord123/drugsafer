@@ -1,396 +1,327 @@
 import React, { useState, useEffect } from 'react';
-import { Clock, Settings, PlusCircle, History, AlertTriangle, Import } from 'lucide-react';
-import DrugTimeline from './DrugTimeline';
-import { timingProfiles, categoryProfiles } from './DrugTimer/timingProfiles';
-import { useNavigate } from 'react-router-dom';
-import { Alert } from './DrugTimer/Alert';
-import MobileModal from './layout/MobileModal';
-import DrugHistory from './DrugHistory';
-import { getDrugTiming, checkDoseSafety } from '../utils/drugTimingHandler';
+import {
+  Clock, Settings, PlusCircle, History, AlertTriangle, Package,
+  Timer, ArrowUpCircle, Activity, HeartPulse, Shield
+} from 'lucide-react';
 import { useAlerts } from '../contexts/AlertContext';
+import { getDrugTiming, checkDoseSafety } from '../utils/drugTimingHandler';
+import { timingProfiles, categoryProfiles, getSubstanceProfile } from './DrugTimer/timingProfiles';
+import Modal from './Modal';
+import DrugHistory from './DrugHistory';
 import DrugTrackerHeader from './DrugTrackerHeader';
-import VitalSignsSection from './VitalSignsSection';
-import SupplyStatus from './SupplyStatus';
-import SettingsModal from './modals/SettingsModal';
-import RecordDoseModal from './modals/RecordDoseModal';
 import OverrideModal from './modals/OverrideModal';
+import RecordDoseModal from './modals/RecordDoseModal';
+import SettingsModal from './modals/SettingsModal';
+import DrugTimeline from './DrugTimer/DrugTimeline';
 
 const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
-  const navigate = useNavigate();
-  const { addAlert: showAlert } = useAlerts();
-
   // Core state
   const [showSettings, setShowSettings] = useState(false);
-  const [customDosage, setCustomDosage] = useState('');
-  const [alerts, setAlerts] = useState([]);
   const [showHistory, setShowHistory] = useState(false);
   const [showOverrideConfirm, setShowOverrideConfirm] = useState(false);
-  const [overrideReason, setOverrideReason] = useState('');
-  const [lastDoseTimer, setLastDoseTimer] = useState(null);
-  const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showDoseModal, setShowDoseModal] = useState(false);
-  const [safetyChecks, setSafetyChecks] = useState(null);
-
-  // Time tracking state
+  const [customDosage, setCustomDosage] = useState(drug.settings?.defaultDosage?.toString() || drug.dosage?.toString() || '');
   const [selectedTime, setSelectedTime] = useState('now');
-  const [customTime, setCustomTime] = useState(new Date().toISOString().slice(0, 16));
+  const [customTime, setCustomTime] = useState(formatDateTimeLocal(new Date()));
+  const [overrideReason, setOverrideReason] = useState('');
+
+  // Timeline state
   const [currentPhase, setCurrentPhase] = useState('none');
+  const [progress, setProgress] = useState(0);
+  const [timeToNextPhase, setTimeToNextPhase] = useState(null);
+  const [showPhaseDetails, setShowPhaseDetails] = useState(false);
 
-  // Settings state
-  const [standardDose, setStandardDose] = useState(drug.dosage || '');
-  const [maxDailyDoses, setMaxDailyDoses] = useState(drug.settings?.maxDailyDoses || 4);
-  const [enableSupply, setEnableSupply] = useState(drug.settings?.trackSupply || false);
-  const [currentSupply, setCurrentSupply] = useState(drug.settings?.currentSupply || 0);
-  const [showTimeline, setShowTimeline] = useState(
-    drug.settings?.showTimeline !== undefined ? drug.settings.showTimeline : true
-  );
+  const { addSafetyAlert, addAlert } = useAlerts();
 
-  // Timing profile state
-  const [useRecommendedTiming, setUseRecommendedTiming] = useState(true);
-  const [minTimeBetweenDoses, setMinTimeBetweenDoses] = useState(
-    drug.settings?.minTimeBetweenDoses || getDefaultTiming()
-  );
-
+  // Reset form state when drug changes
   useEffect(() => {
-    if (showDoseModal) {
-      setCustomDosage(drug.settings?.defaultDosage || drug.dosage || '');
-    }
-  }, [showDoseModal, drug]);
+    resetDoseForm();
+  }, [drug.id]); // Reset when drug changes
 
-  // Get timing from profile
-  function getDefaultTiming() {
-    const profile = timingProfiles[drug.name.toLowerCase()] ||
-      categoryProfiles[drug.category] ||
-      timingProfiles.default;
-    return profile.total() / 60; // Convert minutes to hours
+  // Get drug profile with timing info
+  const getDrugProfile = (drugName) => {
+    return timingProfiles[drugName.toLowerCase()] ||
+           categoryProfiles[drug.category] ||
+           timingProfiles.default;
+  };
+
+  const profile = getDrugProfile(drug.name);
+
+  // Update timeline effect
+  useEffect(() => {
+    if (!drug.doses?.[0]) return;
+
+    const updateTimeline = () => {
+      const now = new Date();
+      const lastDose = new Date(drug.doses[0].timestamp);
+      const minutesSince = (now - lastDose) / (1000 * 60);
+      
+      let currentPhase;
+      let progress;
+      let nextPhase;
+      let timeRemaining;
+
+      const offsetStart = profile.onset.duration + 
+                         profile.comeup.duration + 
+                         profile.peak.duration;
+
+      if (minutesSince < profile.onset.duration) {
+        currentPhase = 'onset';
+        progress = (minutesSince / profile.onset.duration) * 100;
+        nextPhase = 'comeup';
+        timeRemaining = profile.onset.duration - minutesSince;
+      } else if (minutesSince < offsetStart) {
+        currentPhase = minutesSince < (profile.onset.duration + profile.comeup.duration) ? 'comeup' : 'peak';
+        const phaseStart = currentPhase === 'comeup' ? profile.onset.duration : profile.onset.duration + profile.comeup.duration;
+        const phaseDuration = currentPhase === 'comeup' ? profile.comeup.duration : profile.peak.duration;
+        progress = ((minutesSince - phaseStart) / phaseDuration) * 100;
+        nextPhase = currentPhase === 'comeup' ? 'peak' : 'offset';
+        timeRemaining = phaseDuration - (minutesSince - phaseStart);
+      } else if (minutesSince < profile.total()) {
+        currentPhase = 'offset';
+        progress = ((minutesSince - offsetStart) / profile.offset.duration) * 100;
+        nextPhase = 'finished';
+        timeRemaining = profile.offset.duration - (minutesSince - offsetStart);
+      } else {
+        currentPhase = 'finished';
+        progress = 100;
+        nextPhase = 'finished';
+        timeRemaining = 0;
+      }
+
+      const hours = Math.floor(timeRemaining / 60);
+      const minutes = Math.floor(timeRemaining % 60);
+      const seconds = Math.floor((timeRemaining % 1) * 60);
+
+      setCurrentPhase(currentPhase);
+      setProgress(progress);
+      setTimeToNextPhase({ hours, minutes, seconds, nextPhase });
+    };
+
+    updateTimeline();
+    const interval = setInterval(updateTimeline, 1000);
+    return () => clearInterval(interval);
+  }, [drug.doses, profile]);
+
+  function formatDateTimeLocal(date) {
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
   }
 
-  // Format duration for display
-  function formatDuration(minutes) {
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = Math.round(minutes % 60);
-    if (hours === 0) return `${remainingMinutes}m`;
-    if (remainingMinutes === 0) return `${hours}h`;
-    return `${hours}h ${remainingMinutes}m`;
-  }
-
-  // Get the timing profile for the current drug
-  const getTimingProfile = () => {
-    return timingProfiles[drug.name.toLowerCase()] ||
-      categoryProfiles[drug.category] ||
-      timingProfiles.default;
+  const resetDoseForm = () => {
+    setCustomDosage(drug.settings?.defaultDosage?.toString() || drug.dosage?.toString() || '');
+    setSelectedTime('now');
+    setCustomTime(formatDateTimeLocal(new Date()));
+    setOverrideReason('');
   };
 
-  // Helper function to format date for input
-  const formatDateTimeLocal = (date) => {
-    return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
-      .toISOString()
-      .slice(0, 16);
-  };
-
-  // Add Alert handling
-  const addAlert = (type, message, duration = 5000) => {
-    const id = Date.now();
-    setAlerts(prev => [...prev, { id, type, message }]);
-    setTimeout(() => {
-      setAlerts(prev => prev.filter(alert => alert.id !== id));
-    }, duration);
-  };
-
-  const checkSafetyRestrictions = (doseTime = new Date()) => {
-    const today = doseTime.toDateString();
-    const dosesToday = drug.doses?.filter(dose =>
-      new Date(dose.timestamp).toDateString() === today
-    ).length || 0;
-
-    const lastDose = drug.doses?.[0]?.timestamp;
-    const timeSinceLastDose = lastDose
-      ? (doseTime - new Date(lastDose)) / (1000 * 60 * 60)
-      : Infinity;
-
-    const profile = getTimingProfile();
-    const recommendedHours = profile.total() / 60;
-
-    return {
-      hasTimeRestriction: timeSinceLastDose < (useRecommendedTiming ? recommendedHours : drug.settings.minTimeBetweenDoses),
-      hasQuotaRestriction: dosesToday >= drug.settings.maxDailyDoses,
-      timeSinceLastDose,
-      dosesToday,
-      recommendedWaitTime: recommendedHours
-    };
-  };
-
-  const handleUpdateDose = (updatedDose) => {
-    const updatedDoses = drug.doses.map(dose =>
-      dose.id === updatedDose.id ? updatedDose : dose
-    );
-
-    updatedDoses.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-
-    const updatedDrug = {
-      ...drug,
-      doses: updatedDoses
-    };
-
-    onRecordDose(drug.id, updatedDrug);
-    showAlert('success', 'Dose updated successfully');
-  };
-
-  const handleDeleteDose = (doseId) => {
-    const updatedDoses = drug.doses.filter(dose => dose.id !== doseId);
-    const updatedDrug = {
-      ...drug,
-      doses: updatedDoses
-    };
-
-    onRecordDose(drug.id, updatedDrug);
-    showAlert('success', 'Dose deleted successfully');
-  };
-
-  const handleSaveSettings = () => {
-    const profile = getTimingProfile();
-    const totalMinutes = profile.total();
-
-    const updatedSettings = {
-      ...drug.settings,
-      defaultDosage: standardDose,
-      defaultDosageUnit: drug.dosageUnit,
-      maxDailyDoses: Number(maxDailyDoses),
-      minTimeBetweenDoses: useRecommendedTiming ? totalMinutes / 60 : Number(minTimeBetweenDoses),
-      trackSupply: enableSupply,
-      currentSupply: enableSupply ? Number(currentSupply) : null,
-      showTimeline: showTimeline,
-      useRecommendedTiming
-    };
-
-    onUpdateSettings(drug.id, updatedSettings);
-    setShowSettings(false);
-    addAlert('info', 'Settings updated successfully');
-  };
-
-  const handleOverrideDose = () => {
-    if (!customDosage || !drug) return;
-
-    const dosageNum = parseFloat(customDosage);
-
-    let doseTime;
-    if (selectedTime === 'now') {
-      doseTime = new Date();
-    } else {
-      doseTime = new Date(customTime);
+  const handleRecordDose = () => {
+    if (!customDosage || isNaN(customDosage) || parseFloat(customDosage) <= 0) {
+      addAlert('Please enter a valid dosage amount', 'warning');
+      return;
     }
 
-    const newSupply = enableSupply
-      ? Math.max(0, (drug.settings?.currentSupply || 0) - dosageNum)
-      : null;
+    let doseTime = selectedTime === 'now' ? new Date() : new Date(customTime);
+    const safetyCheck = checkDoseSafety(drug, doseTime.toISOString());
 
-    const doseData = {
+    if (!safetyCheck.safe && !safetyCheck.inOffsetPhase) {
+      setShowOverrideConfirm(true);
+      return;
+    }
+
+    // Calculate new supply if tracking is enabled
+    const newSupply = drug.settings?.trackSupply
+      ? Math.max(0, (drug.settings?.currentSupply || 0) - parseFloat(customDosage))
+      : drug.settings?.currentSupply;
+
+    // Create new dose record
+    const newDose = {
       id: Date.now(),
       timestamp: doseTime.toISOString(),
-      dosage: dosageNum,
-      status: 'override',
-      overrideReason: overrideReason || 'Safety override'
+      dosage: parseFloat(customDosage),
+      status: safetyCheck.inOffsetPhase ? 'offset' : 'normal'
     };
 
+    // Update drug record
     const updatedDrug = {
       ...drug,
-      doses: [doseData, ...(drug.doses || [])],
+      doses: [newDose, ...(drug.doses || [])],
       settings: {
         ...drug.settings,
         currentSupply: newSupply
       }
     };
 
-    const safetyChecks = checkSafetyRestrictions(doseTime);
-    const overrideLog = {
-      timestamp: doseTime.toISOString(),
-      drugId: drug.id,
-      drugName: drug.name,
-      reason: overrideReason,
-      timeSinceLastDose: safetyChecks.timeSinceLastDose,
-      dosesToday: safetyChecks.dosesToday
-    };
-
     onRecordDose(drug.id, updatedDrug);
-
     setShowDoseModal(false);
-    setShowOverrideConfirm(false);
-    setOverrideReason('');
-    setCustomDosage('');
-    setSelectedTime('now');
-
-    addAlert('warning', 'Dose recorded with safety override', 8000);
+    resetDoseForm();
+    
+    if (safetyCheck.inOffsetPhase) {
+      addAlert('Dose recorded during offset phase - effects may be different', 'info');
+    } else {
+      addAlert('Dose recorded successfully', 'success');
+    }
   };
 
-  const handleRecordDose = () => {
-    const dosageNum = parseFloat(customDosage);
-
-    if (!customDosage || isNaN(dosageNum) || dosageNum <= 0) {
-      addAlert('error', 'Please enter a valid dosage');
+  const handleOverrideDose = () => {
+    if (!overrideReason.trim()) {
+      addAlert('Please provide a reason for the override', 'warning');
       return;
     }
 
-    let doseTime;
-    if (selectedTime === 'now') {
-      doseTime = new Date();
-    } else {
-      doseTime = new Date(customTime);
-    }
-
-    const safetyCheck = checkSafetyRestrictions(doseTime);
-    if (safetyCheck.hasTimeRestriction || safetyCheck.hasQuotaRestriction) {
-      setSafetyChecks(safetyCheck);
-      setShowOverrideConfirm(true);
-      return;
-    }
+    let doseTime = selectedTime === 'now' ? new Date() : new Date(customTime);
+    const safetyCheck = checkDoseSafety(drug, doseTime.toISOString());
 
     const newDose = {
       id: Date.now(),
       timestamp: doseTime.toISOString(),
-      dosage: dosageNum,
-      status: 'normal'
+      dosage: parseFloat(customDosage),
+      status: 'override',
+      overrideReason,
+      safetyChecks: safetyCheck
     };
+
+    const newSupply = drug.settings?.trackSupply
+      ? Math.max(0, (drug.settings?.currentSupply || 0) - parseFloat(customDosage))
+      : drug.settings?.currentSupply;
 
     const updatedDrug = {
       ...drug,
       doses: [newDose, ...(drug.doses || [])],
       settings: {
         ...drug.settings,
-        currentSupply: enableSupply
-          ? Math.max(0, (drug.settings?.currentSupply || 0) - dosageNum)
-          : drug.settings?.currentSupply
+        currentSupply: newSupply
       }
     };
 
     onRecordDose(drug.id, updatedDrug);
-
+    setShowOverrideConfirm(false);
     setShowDoseModal(false);
-    setCustomDosage('');
-    setSelectedTime('now');
+    resetDoseForm();
 
-    addAlert('success', 'Dose recorded successfully');
+    addSafetyAlert('Override dose recorded - please be extra careful');
+  };
+
+  const handleUpdateDose = (updatedDose) => {
+    const updatedDoses = drug.doses.map(dose =>
+      dose.id === updatedDose.id ? updatedDose : dose
+    );
+    const updatedDrug = { ...drug, doses: updatedDoses };
+    onRecordDose(drug.id, updatedDrug);
+  };
+
+  const handleDeleteDose = (doseId) => {
+    const updatedDoses = drug.doses.filter(dose => dose.id !== doseId);
+    const updatedDrug = { ...drug, doses: updatedDoses };
+    onRecordDose(drug.id, updatedDrug);
   };
 
   return (
     <div className="p-6 space-y-6">
-      {/* System Alerts */}
-      <div id="alerts-container">
-        {alerts.map(alert => (
-          <Alert
-            key={alert.id}
-            type={alert.type}
-            message={alert.message}
-            onDismiss={() => setAlerts(prev => prev.filter(a => a.id !== alert.id))}
-          />
-        ))}
-      </div>
-
-      {/* Drug Tracker Header */}
       <DrugTrackerHeader
         drug={drug}
         onOpenHistory={() => setShowHistory(true)}
         onOpenSettings={() => setShowSettings(true)}
         lastDoseTime={drug.doses?.[0]?.timestamp}
+        currentPhase={currentPhase}
+        timeRemaining={timeToNextPhase}
       />
 
-      {/* Timeline */}
       <DrugTimeline
         lastDoseTime={drug.doses?.[0]?.timestamp}
         drugName={drug.name}
+        category={drug.category}
+        currentPhase={currentPhase}
+        progress={progress}
+        timeToNextPhase={timeToNextPhase}
       />
 
-      {/* Supply Status */}
-      <SupplyStatus drug={drug} />
+      {/* Supply Warning */}
+      {drug.settings?.trackSupply && drug.settings.currentSupply <= 5 && (
+        <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <Package className="w-5 h-5 text-yellow-500" />
+          <p className="text-sm text-yellow-700">
+            Low supply warning: {drug.settings.currentSupply} {drug.settings?.defaultDosageUnit || drug.dosageUnit} remaining
+          </p>
+        </div>
+      )}
 
       {/* Record Dose Button */}
       <button
         onClick={() => setShowDoseModal(true)}
         className="w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 
-           bg-blue-500 hover:bg-blue-600 text-white transition-colors"
-        disabled={drug.settings?.trackSupply && drug.settings?.currentSupply <= 0}
+                 bg-blue-500 hover:bg-blue-600 text-white transition-colors
+                 disabled:opacity-50 disabled:cursor-not-allowed"
+        disabled={drug.settings?.trackSupply && drug.settings.currentSupply <= 0}
       >
         <PlusCircle className="w-5 h-5" />
         <span>
-          {drug.settings?.trackSupply && drug.settings?.currentSupply <= 0
+          {drug.settings?.trackSupply && drug.settings.currentSupply <= 0
             ? 'No Supply Available'
             : 'Record New Dose'
           }
         </span>
       </button>
 
+      {/* Record Dose Modal */}
+      <RecordDoseModal
+        isOpen={showDoseModal}
+        onClose={() => {
+          setShowDoseModal(false);
+          resetDoseForm();
+        }}
+        drug={drug}
+        customDosage={customDosage}
+        selectedTime={selectedTime}
+        customTime={customTime}
+        onDosageChange={setCustomDosage}
+        onTimeSelect={setSelectedTime}
+        onTimeChange={setCustomTime}
+        onRecord={handleRecordDose}
+        formatDateTimeLocal={formatDateTimeLocal}
+      />
+
       {/* Settings Modal */}
       <SettingsModal
-      isOpen={showSettings}
-      onClose={() => setShowSettings(false)}
-      drug={drug}
-      settings={{
-        showTimeline,
-        standardDose,
-        maxDailyDoses,
-        useRecommendedTiming,
-        minTimeBetweenDoses,
-        enableSupply,
-        currentSupply
-      }}
-      onSave={handleSaveSettings}
-      onUpdate={{
-        setShowTimeline,
-        setStandardDose,
-        setMaxDailyDoses,
-        setUseRecommendedTiming,
-        setMinTimeBetweenDoses,
-        setEnableSupply,
-        setCurrentSupply
-      }}
-    />
+        isOpen={showSettings}
+        onClose={() => setShowSettings(false)}
+        drug={drug}
+        settings={drug.settings}
+        onSave={(updatedSettings) => {
+          onUpdateSettings(drug.id, updatedSettings);
+          setShowSettings(false);
+        }}
+      />
+
+      {/* Override Modal */}
+      <OverrideModal
+        isOpen={showOverrideConfirm}
+        onClose={() => {
+          setShowOverrideConfirm(false);
+          setOverrideReason('');
+        }}
+        drug={drug}
+        safetyChecks={checkDoseSafety(drug, 
+          (selectedTime === 'now' ? new Date() : new Date(customTime)).toISOString()
+        )}
+        overrideReason={overrideReason}
+        onReasonChange={setOverrideReason}
+        onOverride={handleOverrideDose}
+      />
 
       {/* History Modal */}
-      <MobileModal
-      isOpen={showHistory}
-      onClose={() => setShowHistory(false)}
-      title="Dose History"
-      fullScreen
-    >
-      <DrugHistory
-        doses={drug.doses}
-        dosageUnit={drug.settings?.defaultDosageUnit || drug.dosageUnit}
-        onUpdateDose={handleUpdateDose}
-        onDeleteDose={handleDeleteDose}
-      />
-    </MobileModal>
-
-      {/* Dose Recording Modal */}
-      <RecordDoseModal
-      isOpen={showDoseModal}
-      onClose={() => {
-        setShowDoseModal(false);
-        setCustomDosage('');
-        setSelectedTime('now');
-      }}
-      drug={drug}
-      customDosage={customDosage}
-      selectedTime={selectedTime}
-      customTime={customTime}
-      onDosageChange={setCustomDosage}
-      onTimeSelect={setSelectedTime}
-      onTimeChange={setCustomTime}
-      onRecord={handleRecordDose}
-      formatDateTimeLocal={formatDateTimeLocal}
-    />
-
-      {/* Override Confirmation Modal */}
-      <OverrideModal
-      isOpen={showOverrideConfirm}
-      onClose={() => {
-        setShowOverrideConfirm(false);
-        setOverrideReason('');
-      }}
-      drug={drug}
-      safetyChecks={safetyChecks}
-      overrideReason={overrideReason}
-      onReasonChange={setOverrideReason}
-      onOverride={handleOverrideDose}
-    />
+      <Modal
+        isOpen={showHistory}
+        onClose={() => setShowHistory(false)}
+        title="Dose History"
+        fullScreen
+      >
+        <DrugHistory
+          doses={drug.doses}
+          dosageUnit={drug.settings?.defaultDosageUnit || drug.dosageUnit}
+          onUpdateDose={handleUpdateDose}
+          onDeleteDose={handleDeleteDose}
+        />
+      </Modal>
     </div>
   );
 };

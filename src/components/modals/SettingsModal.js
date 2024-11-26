@@ -1,174 +1,169 @@
-import React from 'react';
-import MobileModal from '../layout/MobileModal';
+import React, { useState } from 'react';
+import Modal from '../Modal';
 
 const SettingsModal = ({
   isOpen,
   onClose,
   drug,
   settings,
-  onSave,
-  onUpdate
+  onSave
 }) => {
-  const {
-    showTimeline,
-    standardDose,
-    maxDailyDoses,
-    useRecommendedTiming,
-    minTimeBetweenDoses,
-    enableSupply,
-    currentSupply
-  } = settings;
+  const [showTimeline, setShowTimeline] = useState(settings?.showTimeline ?? true);
+  const [standardDose, setStandardDose] = useState(settings?.standardDose || '');
+  const [maxDailyDoses, setMaxDailyDoses] = useState(settings?.maxDailyDoses || 4);
+  const [useRecommendedTiming, setUseRecommendedTiming] = useState(settings?.useRecommendedTiming ?? true);
+  const [minTimeBetweenDoses, setMinTimeBetweenDoses] = useState(settings?.minTimeBetweenDoses || 4);
+  const [enableSupply, setEnableSupply] = useState(settings?.enableSupply ?? false);
+  const [currentSupply, setCurrentSupply] = useState(settings?.currentSupply || 0);
 
-  const {
-    setShowTimeline,
-    setStandardDose,
-    setMaxDailyDoses,
-    setUseRecommendedTiming,
-    setMinTimeBetweenDoses,
-    setEnableSupply,
-    setCurrentSupply
-  } = onUpdate;
+  const handleSave = () => {
+    onSave({
+      showTimeline,
+      defaultDosage: standardDose,
+      maxDailyDoses: Number(maxDailyDoses),
+      useRecommendedTiming,
+      minTimeBetweenDoses: Number(minTimeBetweenDoses),
+      trackSupply: enableSupply,
+      currentSupply: Number(currentSupply)
+    });
+  };
 
   return (
-    <MobileModal
+    <Modal
       isOpen={isOpen}
       onClose={onClose}
       title="Drug Settings"
       fullScreen
     >
       <div className="p-4 space-y-6">
-          {/* Timeline Toggle */}
-          <div className="space-y-2">
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={showTimeline}
-                onChange={(e) => setShowTimeline(e.target.checked)}
-                className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
-              />
-              <span className="text-sm font-medium text-gray-700">
-                Show Effect Timeline
-              </span>
-            </label>
-          </div>
-
-          {/* Standard Dose Setting */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Standard Dose ({drug.dosageUnit})
-            </label>
+        {/* Timeline Toggle */}
+        <div className="space-y-2">
+          <label className="flex items-center gap-2">
             <input
-              type="number"
-              value={standardDose}
-              onChange={(e) => setStandardDose(e.target.value)}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              min="0"
-              step="any"
+              type="checkbox"
+              checked={showTimeline}
+              onChange={(e) => setShowTimeline(e.target.checked)}
+              className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
             />
-          </div>
+            <span className="text-sm font-medium text-gray-700">
+              Show Effect Timeline
+            </span>
+          </label>
+        </div>
 
-          {/* Max Daily Doses Setting */}
-          <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
-              Maximum Doses per Day
-            </label>
+        {/* Standard Dose Setting */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Standard Dose ({drug.dosageUnit})
+          </label>
+          <input
+            type="number"
+            value={standardDose}
+            onChange={(e) => setStandardDose(e.target.value)}
+            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+            min="0"
+            step="any"
+          />
+        </div>
+
+        {/* Max Daily Doses */}
+        <div className="space-y-2">
+          <label className="block text-sm font-medium text-gray-700">
+            Maximum Doses per Day
+          </label>
+          <input
+            type="number"
+            value={maxDailyDoses}
+            onChange={(e) => setMaxDailyDoses(Number(e.target.value))}
+            className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+            min="1"
+          />
+        </div>
+
+        {/* Timing Settings */}
+        <div className="space-y-4">
+          <label className="flex items-center gap-2">
             <input
-              type="number"
-              value={maxDailyDoses}
-              onChange={(e) => setMaxDailyDoses(Number(e.target.value))}
-              className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-              min="1"
+              type="checkbox"
+              checked={useRecommendedTiming}
+              onChange={(e) => setUseRecommendedTiming(e.target.checked)}
+              className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
             />
-          </div>
+            <span className="text-sm font-medium text-gray-700">
+              Use Recommended Timing
+            </span>
+          </label>
 
-          {/* Timing Settings */}
-          <div className="space-y-4">
-            <label className="flex items-center gap-2">
+          {!useRecommendedTiming && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Custom Time Between Doses (hours)
+              </label>
               <input
-                type="checkbox"
-                checked={useRecommendedTiming}
-                onChange={(e) => setUseRecommendedTiming(e.target.checked)}
-                className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                type="number"
+                value={minTimeBetweenDoses}
+                onChange={(e) => setMinTimeBetweenDoses(Number(e.target.value))}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                min="0"
+                step="0.5"
               />
-              <span className="text-sm font-medium text-gray-700">
-                Use Recommended Timing
-              </span>
-            </label>
+            </div>
+          )}
+        </div>
 
-            {!useRecommendedTiming && (
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Custom Time Between Doses (hours)
-                </label>
-                <input
-                  type="number"
-                  value={minTimeBetweenDoses}
-                  onChange={(e) => setMinTimeBetweenDoses(Number(e.target.value))}
-                  className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                  min="0"
-                  step="0.5"
-                />
-              </div>
-            )}
-          </div>
+        {/* Supply Management */}
+        <div className="space-y-4">
+          <label className="flex items-center gap-2">
+            <input
+              type="checkbox"
+              checked={enableSupply}
+              onChange={(e) => {
+                setEnableSupply(e.target.checked);
+                if (!e.target.checked) {
+                  setCurrentSupply(0);
+                }
+              }}
+              className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+            />
+            <span className="text-sm font-medium text-gray-700">
+              Track Supply
+            </span>
+          </label>
 
-          {/* Supply Management */}
-          <div className="space-y-4">
-            <label className="flex items-center gap-2">
+          {enableSupply && (
+            <div className="space-y-2">
+              <label className="block text-sm font-medium text-gray-700">
+                Current Supply ({drug.dosageUnit})
+              </label>
               <input
-                type="checkbox"
-                checked={enableSupply}
-                onChange={(e) => {
-                  setEnableSupply(e.target.checked);
-                  if (!e.target.checked) {
-                    setCurrentSupply(0);
-                  }
-                }}
-                className="rounded border-gray-300 text-blue-500 focus:ring-blue-500"
+                type="number"
+                value={currentSupply}
+                onChange={(e) => setCurrentSupply(Number(e.target.value))}
+                className="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
+                min="0"
+                step="any"
               />
-              <span className="text-sm font-medium text-gray-700">
-                Track Supply
-              </span>
-            </label>
+            </div>
+          )}
+        </div>
 
-            {enableSupply && (
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    Current Supply ({drug.settings?.defaultDosageUnit || drug.dosageUnit})
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="number"
-                      value={currentSupply}
-                      onChange={(e) => setCurrentSupply(Number(e.target.value))}
-                      className="flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500"
-                      min="0"
-                      step="any"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Settings Save/Cancel Buttons */}
-          <div className="flex gap-3">
-            <button
-              onClick={onSave}
-              className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
-            >
-              Save Settings
-            </button>
-            <button
-              onClick={onClose}
-              className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
-            >
-              Cancel
-            </button>
-          </div>
+        {/* Save/Cancel Buttons */}
+        <div className="flex gap-3">
+          <button
+            onClick={handleSave}
+            className="flex-1 bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600"
+          >
+            Save Settings
+          </button>
+          <button
+            onClick={onClose}
+            className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200"
+          >
+            Cancel
+          </button>
+        </div>
       </div>
-    </MobileModal>
+    </Modal>
   );
 };
 
