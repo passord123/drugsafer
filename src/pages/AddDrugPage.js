@@ -29,7 +29,7 @@ const AddDrugPage = () => {
     // Check if the drug already exists
     const existingDrug = existingDrugs.find(d => d.name === drug.name);
     if (existingDrug) {
-      // Update the existing drug with new settings while preserving defaults
+      // Update existing drug
       const updatedDrugs = existingDrugs.map(d =>
         d.name === drug.name
           ? {
@@ -52,7 +52,7 @@ const AddDrugPage = () => {
       );
       localStorage.setItem('drugs', JSON.stringify(updatedDrugs));
     } else {
-      // Create a new drug object with settings from configuration
+      // Create new drug
       const newDrug = {
         id: Date.now(),
         name: drug.name,
@@ -82,7 +82,6 @@ const AddDrugPage = () => {
       localStorage.setItem('drugs', JSON.stringify(updatedDrugs));
     }
 
-    // Navigate back to drugs page
     navigate('/drugs');
   };
 
@@ -91,21 +90,21 @@ const AddDrugPage = () => {
       <div className="mb-8">
         <button
           onClick={() => navigate(-1)}
-          className="flex items-center text-gray-600 hover:text-gray-900 transition-colors mb-6"
+          className="flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors mb-6"
         >
           <ChevronLeft className="w-5 h-5 mr-1" />
           Back
         </button>
 
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Add New Drug</h1>
-          <p className="text-gray-600">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Add New Drug</h1>
+          <p className="text-gray-600 dark:text-gray-300">
             Search our database for your drugs of choice and add them to your tracker
           </p>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-sm">
+      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
         <DrugForm onAdd={handleAddDrug} defaultDrugs={defaultDrugs} />
       </div>
     </div>

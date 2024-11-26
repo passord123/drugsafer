@@ -16,36 +16,36 @@ const Progress = ({ value, warning }) => (
 
 const StatCard = ({ icon: Icon, title, value, subtitle, warning, success }) => (
   <div className={`${
-    warning ? 'bg-red-50' : 
-    success ? 'bg-green-50' : 
-    'bg-white'
-  } p-6 rounded-lg border shadow-sm`}>
+    warning ? 'bg-red-50 dark:bg-red-900/20' : 
+    success ? 'bg-green-50 dark:bg-green-900/20' : 
+    'bg-white dark:bg-gray-800'
+  } p-6 rounded-lg border dark:border-gray-700 shadow-sm`}>
     <div className="flex items-center space-x-3 mb-4">
       <div className={`${
-        warning ? 'bg-red-100' : 
-        success ? 'bg-green-100' : 
-        'bg-blue-50'
+        warning ? 'bg-red-100 dark:bg-red-800' : 
+        success ? 'bg-green-100 dark:bg-green-800' : 
+        'bg-blue-50 dark:bg-blue-900'
       } p-2 rounded-lg`}>
         <Icon className={`w-6 h-6 ${
-          warning ? 'text-red-500' : 
-          success ? 'text-green-500' : 
-          'text-blue-500'
+          warning ? 'text-red-500 dark:text-red-400' : 
+          success ? 'text-green-500 dark:text-green-400' : 
+          'text-blue-500 dark:text-blue-400'
         }`} />
       </div>
-      <h3 className="font-medium text-gray-900">{title}</h3>
+      <h3 className="font-medium text-gray-900 dark:text-white">{title}</h3>
     </div>
     <p className={`text-3xl font-bold ${
-      warning ? 'text-red-600' : 
-      success ? 'text-green-600' : 
-      'text-gray-900'
+      warning ? 'text-red-600 dark:text-red-400' : 
+      success ? 'text-green-600 dark:text-green-400' : 
+      'text-gray-900 dark:text-white'
     } mb-1`}>
       {value}
     </p>
     {subtitle && (
       <p className={`text-sm ${
-        warning ? 'text-red-600' : 
-        success ? 'text-green-600' : 
-        'text-gray-500'
+        warning ? 'text-red-600 dark:text-red-400' : 
+        success ? 'text-green-600 dark:text-green-400' : 
+        'text-gray-500 dark:text-gray-400'
       }`}>
         {subtitle}
       </p>
