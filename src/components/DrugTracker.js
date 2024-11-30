@@ -1,11 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import {
-  Clock, Settings, PlusCircle, History, AlertTriangle, Package,
-  Timer, ArrowUpCircle, Activity, HeartPulse, Shield
+  Clock,
+  Settings,
+  PlusCircle,
+  History,
+  AlertTriangle,
+  Package,
+  Timer,
+  ArrowUpCircle,
+  Activity,
+  HeartPulse,
+  Shield,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import { useAlerts } from '../contexts/AlertContext';
-import { getDrugTiming, checkDoseSafety } from '../utils/drugTimingHandler';
-import { timingProfiles, categoryProfiles, getSubstanceProfile } from './DrugTimer/timingProfiles';
+import { getDrugTiming, checkDoseSafety, formatDuration } from '../utils/drugTimingHandler';
+import { timingProfiles, categoryProfiles } from './DrugTimer/timingProfiles';
 import Modal from './Modal';
 import DrugHistory from './DrugHistory';
 import DrugTrackerHeader from './DrugTrackerHeader';
@@ -20,7 +31,10 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
   const [showHistory, setShowHistory] = useState(false);
   const [showOverrideConfirm, setShowOverrideConfirm] = useState(false);
   const [showDoseModal, setShowDoseModal] = useState(false);
-  const [customDosage, setCustomDosage] = useState(drug.settings?.defaultDosage?.toString() || drug.dosage?.toString() || '');
+  const [customDosage, setCustomDosage] = useState(
+    drug.settings?.defaultDosage?.toString() || 
+    drug.dosage?.toString() || ''
+  );
   const [selectedTime, setSelectedTime] = useState('now');
   const [customTime, setCustomTime] = useState(formatDateTimeLocal(new Date()));
   const [overrideReason, setOverrideReason] = useState('');
@@ -33,11 +47,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
 
   const { addSafetyAlert, addAlert } = useAlerts();
 
-  // Reset form state when drug changes
-  useEffect(() => {
-    resetDoseForm();
-  }, [drug.id]); // Reset when drug changes
-
   // Get drug profile with timing info
   const getDrugProfile = (drugName) => {
     return timingProfiles[drugName.toLowerCase()] ||
@@ -46,6 +55,11 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
   };
 
   const profile = getDrugProfile(drug.name);
+
+  // Reset form state when drug changes
+  useEffect(() => {
+    resetDoseForm();
+  }, [drug.id]);
 
   // Update timeline effect
   useEffect(() => {
@@ -56,46 +70,15 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
       const lastDose = new Date(drug.doses[0].timestamp);
       const minutesSince = (now - lastDose) / (1000 * 60);
       
-      let currentPhase;
-      let progress;
-      let nextPhase;
-      let timeRemaining;
-
-      const offsetStart = profile.onset.duration + 
-                         profile.comeup.duration + 
-                         profile.peak.duration;
-
-      if (minutesSince < profile.onset.duration) {
-        currentPhase = 'onset';
-        progress = (minutesSince / profile.onset.duration) * 100;
-        nextPhase = 'comeup';
-        timeRemaining = profile.onset.duration - minutesSince;
-      } else if (minutesSince < offsetStart) {
-        currentPhase = minutesSince < (profile.onset.duration + profile.comeup.duration) ? 'comeup' : 'peak';
-        const phaseStart = currentPhase === 'comeup' ? profile.onset.duration : profile.onset.duration + profile.comeup.duration;
-        const phaseDuration = currentPhase === 'comeup' ? profile.comeup.duration : profile.peak.duration;
-        progress = ((minutesSince - phaseStart) / phaseDuration) * 100;
-        nextPhase = currentPhase === 'comeup' ? 'peak' : 'offset';
-        timeRemaining = phaseDuration - (minutesSince - phaseStart);
-      } else if (minutesSince < profile.total()) {
-        currentPhase = 'offset';
-        progress = ((minutesSince - offsetStart) / profile.offset.duration) * 100;
-        nextPhase = 'finished';
-        timeRemaining = profile.offset.duration - (minutesSince - offsetStart);
-      } else {
-        currentPhase = 'finished';
-        progress = 100;
-        nextPhase = 'finished';
-        timeRemaining = 0;
-      }
-
-      const hours = Math.floor(timeRemaining / 60);
-      const minutes = Math.floor(timeRemaining % 60);
-      const seconds = Math.floor((timeRemaining % 1) * 60);
-
-      setCurrentPhase(currentPhase);
-      setProgress(progress);
-      setTimeToNextPhase({ hours, minutes, seconds, nextPhase });
+      let phase = calculatePhase(minutesSince, profile);
+      setCurrentPhase(phase.currentPhase);
+      setProgress(phase.progress);
+      setTimeToNextPhase({
+        hours: Math.floor(phase.timeRemaining / 60),
+        minutes: Math.floor(phase.timeRemaining % 60),
+        seconds: Math.floor((phase.timeRemaining % 1) * 60),
+        nextPhase: phase.nextPhase
+      });
     };
 
     updateTimeline();
@@ -103,12 +86,57 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     return () => clearInterval(interval);
   }, [drug.doses, profile]);
 
+  const calculatePhase = (minutesSince, profile) => {
+    const offsetStart = profile.onset.duration + 
+                       profile.comeup.duration + 
+                       profile.peak.duration;
+
+    if (minutesSince < profile.onset.duration) {
+      return {
+        currentPhase: 'onset',
+        progress: (minutesSince / profile.onset.duration) * 100,
+        timeRemaining: profile.onset.duration - minutesSince,
+        nextPhase: 'comeup'
+      };
+    } else if (minutesSince < offsetStart) {
+      const isInComeup = minutesSince < (profile.onset.duration + profile.comeup.duration);
+      const phaseStart = isInComeup ? profile.onset.duration : 
+                        profile.onset.duration + profile.comeup.duration;
+      const phaseDuration = isInComeup ? profile.comeup.duration : profile.peak.duration;
+      return {
+        currentPhase: isInComeup ? 'comeup' : 'peak',
+        progress: ((minutesSince - phaseStart) / phaseDuration) * 100,
+        timeRemaining: phaseDuration - (minutesSince - phaseStart),
+        nextPhase: isInComeup ? 'peak' : 'offset'
+      };
+    } else if (minutesSince < profile.total()) {
+      return {
+        currentPhase: 'offset',
+        progress: ((minutesSince - offsetStart) / profile.offset.duration) * 100,
+        timeRemaining: profile.offset.duration - (minutesSince - offsetStart),
+        nextPhase: 'finished'
+      };
+    }
+    
+    return {
+      currentPhase: 'finished',
+      progress: 100,
+      timeRemaining: 0,
+      nextPhase: 'finished'
+    };
+  };
+
   function formatDateTimeLocal(date) {
-    return new Date(date.getTime() - date.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    return new Date(date.getTime() - date.getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
   }
 
   const resetDoseForm = () => {
-    setCustomDosage(drug.settings?.defaultDosage?.toString() || drug.dosage?.toString() || '');
+    setCustomDosage(
+      drug.settings?.defaultDosage?.toString() || 
+      drug.dosage?.toString() || ''
+    );
     setSelectedTime('now');
     setCustomTime(formatDateTimeLocal(new Date()));
     setOverrideReason('');
@@ -128,12 +156,10 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
       return;
     }
 
-    // Calculate new supply if tracking is enabled
     const newSupply = drug.settings?.trackSupply
       ? Math.max(0, (drug.settings?.currentSupply || 0) - parseFloat(customDosage))
       : drug.settings?.currentSupply;
 
-    // Create new dose record
     const newDose = {
       id: Date.now(),
       timestamp: doseTime.toISOString(),
@@ -141,7 +167,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
       status: safetyCheck.inOffsetPhase ? 'offset' : 'normal'
     };
 
-    // Update drug record
     const updatedDrug = {
       ...drug,
       doses: [newDose, ...(drug.doses || [])],
@@ -197,7 +222,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     setShowOverrideConfirm(false);
     setShowDoseModal(false);
     resetDoseForm();
-
     addSafetyAlert('Override dose recorded - please be extra careful');
   };
 
@@ -213,10 +237,60 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     const updatedDoses = drug.doses.filter(dose => dose.id !== doseId);
     const updatedDrug = { ...drug, doses: updatedDoses };
     onRecordDose(drug.id, updatedDrug);
+    addAlert('Dose record deleted', 'success');
+  };
+
+  const getPhaseStyles = (phase) => {
+    switch (phase) {
+      case 'onset':
+        return {
+          bg: 'bg-yellow-50 dark:bg-yellow-900/20',
+          border: 'border-yellow-200 dark:border-yellow-700',
+          text: 'text-yellow-800 dark:text-yellow-200'
+        };
+      case 'comeup':
+        return {
+          bg: 'bg-orange-50 dark:bg-orange-900/20',
+          border: 'border-orange-200 dark:border-orange-700',
+          text: 'text-orange-800 dark:text-orange-200'
+        };
+      case 'peak':
+        return {
+          bg: 'bg-red-50 dark:bg-red-900/20',
+          border: 'border-red-200 dark:border-red-700',
+          text: 'text-red-800 dark:text-red-200'
+        };
+      case 'offset':
+        return {
+          bg: 'bg-blue-50 dark:bg-blue-900/20',
+          border: 'border-blue-200 dark:border-blue-700',
+          text: 'text-blue-800 dark:text-blue-200'
+        };
+      case 'finished':
+        return {
+          bg: 'bg-green-50 dark:bg-green-900/20',
+          border: 'border-green-200 dark:border-green-700',
+          text: 'text-green-800 dark:text-green-200'
+        };
+      default:
+        return {
+          bg: 'bg-gray-50 dark:bg-gray-800',
+          border: 'border-gray-200 dark:border-gray-700',
+          text: 'text-gray-800 dark:text-gray-200'
+        };
+    }
+  };
+
+  const formatTime = (time) => {
+    if (!time) return '--:--:--';
+    const { hours, minutes, seconds } = time;
+    return `${String(hours).padStart(2, '0')}:${
+      String(minutes).padStart(2, '0')}:${
+      String(seconds).padStart(2, '0')}`;
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="space-y-6 p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
       <DrugTrackerHeader
         drug={drug}
         onOpenHistory={() => setShowHistory(true)}
@@ -235,23 +309,24 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
         timeToNextPhase={timeToNextPhase}
       />
 
-      {/* Supply Warning */}
       {drug.settings?.trackSupply && drug.settings.currentSupply <= 5 && (
-        <div className="flex items-center gap-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <Package className="w-5 h-5 text-yellow-500" />
-          <p className="text-sm text-yellow-700">
-            Low supply warning: {drug.settings.currentSupply} {drug.settings?.defaultDosageUnit || drug.dosageUnit} remaining
+        <div className="flex items-center gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 
+                     border border-yellow-200 dark:border-yellow-700 rounded-lg">
+          <Package className="w-5 h-5 text-yellow-500 dark:text-yellow-400" />
+          <p className="text-sm text-yellow-700 dark:text-yellow-200">
+            Low supply warning: {drug.settings.currentSupply} 
+            {drug.settings?.defaultDosageUnit || drug.dosageUnit} remaining
           </p>
         </div>
       )}
 
-      {/* Record Dose Button */}
       <button
         onClick={() => setShowDoseModal(true)}
-        className="w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 
-                 bg-blue-500 hover:bg-blue-600 text-white transition-colors
-                 disabled:opacity-50 disabled:cursor-not-allowed"
         disabled={drug.settings?.trackSupply && drug.settings.currentSupply <= 0}
+        className="w-full py-3 px-4 rounded-lg flex items-center justify-center gap-2 
+                 bg-blue-500 dark:bg-blue-600 hover:bg-blue-600 dark:hover:bg-blue-700 
+                 text-white transition-colors
+                 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         <PlusCircle className="w-5 h-5" />
         <span>
@@ -262,7 +337,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
         </span>
       </button>
 
-      {/* Record Dose Modal */}
       <RecordDoseModal
         isOpen={showDoseModal}
         onClose={() => {
@@ -280,7 +354,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
         formatDateTimeLocal={formatDateTimeLocal}
       />
 
-      {/* Settings Modal */}
       <SettingsModal
         isOpen={showSettings}
         onClose={() => setShowSettings(false)}
@@ -292,7 +365,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
         }}
       />
 
-      {/* Override Modal */}
       <OverrideModal
         isOpen={showOverrideConfirm}
         onClose={() => {
@@ -308,7 +380,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
         onOverride={handleOverrideDose}
       />
 
-      {/* History Modal */}
       <Modal
         isOpen={showHistory}
         onClose={() => setShowHistory(false)}
@@ -322,6 +393,110 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
           onDeleteDose={handleDeleteDose}
         />
       </Modal>
+
+      {/* Additional Safety Information */}
+      {currentPhase !== 'none' && currentPhase !== 'finished' && (
+        <div className="space-y-4">
+          <button
+            onClick={() => setShowPhaseDetails(!showPhaseDetails)}
+            className="w-full flex items-center justify-between p-3 rounded-lg
+                     bg-gray-50 dark:bg-gray-700/50 
+                     text-gray-900 dark:text-white
+                     hover:bg-gray-100 dark:hover:bg-gray-700 
+                     transition-colors"
+          >
+            <span className="font-medium">Phase Details & Safety</span>
+            {showPhaseDetails ? (
+              <ChevronUp className="w-5 h-5" />
+            ) : (
+              <ChevronDown className="w-5 h-5" />
+            )}
+          </button>
+
+          {showPhaseDetails && (
+            <div className="space-y-4 p-4 rounded-lg border 
+                         border-gray-200 dark:border-gray-700
+                         bg-white dark:bg-gray-800">
+              {/* Phase-specific safety info */}
+              <div className="space-y-2">
+                <h4 className="font-medium text-gray-900 dark:text-white">
+                  Safety Guidelines
+                </h4>
+                <div className="space-y-3">
+                  {profile[currentPhase]?.safetyInfo && (
+                    <div className="flex items-start gap-2">
+                      <Shield className="w-4 h-4 text-blue-500 dark:text-blue-400 mt-1" />
+                      <p className="text-sm text-gray-600 dark:text-gray-300">
+                        {profile[currentPhase].safetyInfo}
+                      </p>
+                    </div>
+                  )}
+                  
+                  {/* Vital signs monitoring */}
+                  <div className="flex items-start gap-2">
+                    <HeartPulse className="w-4 h-4 text-blue-500 dark:text-blue-400 mt-1" />
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      Monitor vital signs: 
+                      {profile[currentPhase]?.vitals?.join(', ') || 'General wellbeing'}
+                    </p>
+                  </div>
+
+                  {/* Activity recommendations */}
+                  <div className="flex items-start gap-2">
+                    <Activity className="w-4 h-4 text-blue-500 dark:text-blue-400 mt-1" />
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      {currentPhase === 'peak' 
+                        ? 'Avoid strenuous activity'
+                        : 'Maintain comfortable activity level'
+                      }
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Next phase preview */}
+              {currentPhase !== 'finished' && timeToNextPhase && (
+                <div className="space-y-2">
+                  <h4 className="font-medium text-gray-900 dark:text-white">
+                    Next Phase
+                  </h4>
+                  <div className="flex items-center gap-2">
+                    <Timer className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                    <p className="text-sm text-gray-600 dark:text-gray-300">
+                      {timeToNextPhase.nextPhase} phase begins in {formatTime(timeToNextPhase)}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Interaction Safety Reminder */}
+      <div className="p-4 rounded-lg border border-gray-200 dark:border-gray-700
+                    bg-gray-50 dark:bg-gray-700/50">
+        <div className="flex items-center gap-2 mb-2">
+          <Shield className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+          <h4 className="font-medium text-gray-900 dark:text-white">
+            Safety Reminders
+          </h4>
+        </div>
+        <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+          <li className="flex items-start gap-2">
+            <span className="text-blue-500 dark:text-blue-400">•</span>
+            Don't mix with other substances without checking interactions
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-blue-500 dark:text-blue-400">•</span>
+            Stay hydrated but don't overdrink
+          </li>
+          <li className="flex items-start gap-2">
+            <span className="text-blue-500 dark:text-blue-400">•</span>
+            Have a trusted friend available if possible
+          </li>
+        </ul>
+      </div>
     </div>
   );
 };

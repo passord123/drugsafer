@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { X } from 'lucide-react';
 
-const MobileModal = ({ 
+export const MobileModal = ({ 
   isOpen, 
   onClose, 
   title, 
@@ -36,32 +36,36 @@ const MobileModal = ({
   return (
     <div className="fixed inset-0 z-[100]">
       <div 
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-black/50 dark:bg-black/70"
         onClick={onClose}
       />
       <div className={`
-        absolute bg-[#1a1f2e] 
+        absolute bg-white dark:bg-gray-800 shadow-xl
         ${fullScreen ? 'inset-0' : 'inset-x-4 top-1/2 -translate-y-1/2 rounded-lg max-h-[85vh]'}
         flex flex-col sm:max-w-lg sm:mx-auto sm:inset-x-4
+        border border-gray-200 dark:border-gray-700
       `}>
         {title && (
-          <div className="sticky top-0 bg-[#1a1f2e] border-b border-gray-800 px-4 py-3 flex items-center justify-between">
-            <div className="flex-1 pr-4 text-white">
+          <div className="sticky top-0 bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-4 py-3 flex items-center justify-between">
+            <div className="flex-1 pr-4">
               {typeof title === 'string' ? (
-                <h2 className="text-lg font-semibold">{title}</h2>
+                <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{title}</h2>
               ) : title}
             </div>
             {showCloseButton && (
               <button
                 onClick={onClose}
-                className="p-2 text-gray-400 hover:text-gray-300 hover:bg-[#232936] rounded-full transition-colors"
+                className="p-2 text-gray-400 dark:text-gray-500 
+                         hover:text-gray-500 dark:hover:text-gray-400
+                         hover:bg-gray-100 dark:hover:bg-gray-700/50 
+                         rounded-full transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             )}
           </div>
         )}
-        <div className="overflow-y-auto flex-1 overscroll-contain">
+        <div className="overflow-y-auto flex-1 overscroll-contain bg-white dark:bg-gray-800">
           {children}
         </div>
       </div>
