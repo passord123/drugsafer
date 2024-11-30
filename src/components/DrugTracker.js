@@ -24,6 +24,7 @@ import OverrideModal from './modals/OverrideModal';
 import RecordDoseModal from './modals/RecordDoseModal';
 import SettingsModal from './modals/SettingsModal';
 import DrugTimeline from './DrugTimer/DrugTimeline';
+import MobileDrugTracker from './MobileDrugTracker';
 
 const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
   // Core state
@@ -32,7 +33,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
   const [showOverrideConfirm, setShowOverrideConfirm] = useState(false);
   const [showDoseModal, setShowDoseModal] = useState(false);
   const [customDosage, setCustomDosage] = useState(
-    drug.settings?.defaultDosage?.toString() || 
+    drug.settings?.defaultDosage?.toString() ||
     drug.dosage?.toString() || ''
   );
   const [selectedTime, setSelectedTime] = useState('now');
@@ -50,8 +51,8 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
   // Get drug profile with timing info
   const getDrugProfile = (drugName) => {
     return timingProfiles[drugName.toLowerCase()] ||
-           categoryProfiles[drug.category] ||
-           timingProfiles.default;
+      categoryProfiles[drug.category] ||
+      timingProfiles.default;
   };
 
   const profile = getDrugProfile(drug.name);
@@ -69,7 +70,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
       const now = new Date();
       const lastDose = new Date(drug.doses[0].timestamp);
       const minutesSince = (now - lastDose) / (1000 * 60);
-      
+
       let phase = calculatePhase(minutesSince, profile);
       setCurrentPhase(phase.currentPhase);
       setProgress(phase.progress);
@@ -87,9 +88,9 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
   }, [drug.doses, profile]);
 
   const calculatePhase = (minutesSince, profile) => {
-    const offsetStart = profile.onset.duration + 
-                       profile.comeup.duration + 
-                       profile.peak.duration;
+    const offsetStart = profile.onset.duration +
+      profile.comeup.duration +
+      profile.peak.duration;
 
     if (minutesSince < profile.onset.duration) {
       return {
@@ -100,8 +101,8 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
       };
     } else if (minutesSince < offsetStart) {
       const isInComeup = minutesSince < (profile.onset.duration + profile.comeup.duration);
-      const phaseStart = isInComeup ? profile.onset.duration : 
-                        profile.onset.duration + profile.comeup.duration;
+      const phaseStart = isInComeup ? profile.onset.duration :
+        profile.onset.duration + profile.comeup.duration;
       const phaseDuration = isInComeup ? profile.comeup.duration : profile.peak.duration;
       return {
         currentPhase: isInComeup ? 'comeup' : 'peak',
@@ -117,7 +118,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
         nextPhase: 'finished'
       };
     }
-    
+
     return {
       currentPhase: 'finished',
       progress: 100,
@@ -134,7 +135,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
 
   const resetDoseForm = () => {
     setCustomDosage(
-      drug.settings?.defaultDosage?.toString() || 
+      drug.settings?.defaultDosage?.toString() ||
       drug.dosage?.toString() || ''
     );
     setSelectedTime('now');
@@ -179,7 +180,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
     onRecordDose(drug.id, updatedDrug);
     setShowDoseModal(false);
     resetDoseForm();
-    
+
     if (safetyCheck.inOffsetPhase) {
       addAlert('Dose recorded during offset phase - effects may be different', 'info');
     } else {
@@ -284,13 +285,24 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
   const formatTime = (time) => {
     if (!time) return '--:--:--';
     const { hours, minutes, seconds } = time;
-    return `${String(hours).padStart(2, '0')}:${
-      String(minutes).padStart(2, '0')}:${
-      String(seconds).padStart(2, '0')}`;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
   };
 
   return (
     <div className="space-y-6 p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+      <div className="lg:hidden">
+        <MobileDrugTracker
+          drug={drug}
+          lastDoseTime={drug.doses?.[0]?.timestamp}
+          currentPhase={currentPhase}
+          timeToNextPhase={timeToNextPhase}
+          onRecordDose={() => setShowDoseModal(true)}
+          onOpenHistory={() => setShowHistory(true)}
+          onOpenSettings={() => setShowSettings(true)}
+        />
+      </div>
+
+
       <DrugTrackerHeader
         drug={drug}
         onOpenHistory={() => setShowHistory(true)}
@@ -314,7 +326,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
                      border border-yellow-200 dark:border-yellow-700 rounded-lg">
           <Package className="w-5 h-5 text-yellow-500 dark:text-yellow-400" />
           <p className="text-sm text-yellow-700 dark:text-yellow-200">
-            Low supply warning: {drug.settings.currentSupply} 
+            Low supply warning: {drug.settings.currentSupply}
             {drug.settings?.defaultDosageUnit || drug.dosageUnit} remaining
           </p>
         </div>
@@ -372,7 +384,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
           setOverrideReason('');
         }}
         drug={drug}
-        safetyChecks={checkDoseSafety(drug, 
+        safetyChecks={checkDoseSafety(drug,
           (selectedTime === 'now' ? new Date() : new Date(customTime)).toISOString()
         )}
         overrideReason={overrideReason}
@@ -431,12 +443,12 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
                       </p>
                     </div>
                   )}
-                  
+
                   {/* Vital signs monitoring */}
                   <div className="flex items-start gap-2">
                     <HeartPulse className="w-4 h-4 text-blue-500 dark:text-blue-400 mt-1" />
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      Monitor vital signs: 
+                      Monitor vital signs:
                       {profile[currentPhase]?.vitals?.join(', ') || 'General wellbeing'}
                     </p>
                   </div>
@@ -445,7 +457,7 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
                   <div className="flex items-start gap-2">
                     <Activity className="w-4 h-4 text-blue-500 dark:text-blue-400 mt-1" />
                     <p className="text-sm text-gray-600 dark:text-gray-300">
-                      {currentPhase === 'peak' 
+                      {currentPhase === 'peak'
                         ? 'Avoid strenuous activity'
                         : 'Maintain comfortable activity level'
                       }
