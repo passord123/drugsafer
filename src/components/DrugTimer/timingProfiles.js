@@ -44,7 +44,7 @@ export const timingProfiles = {
   'alprazolam': {
     onset: { 
       duration: 15, 
-      intensity: 'moderate',
+      intensity: 'waiting',
       safetyInfo: "Initial calming effects beginning. Stay in a safe environment."
     },
     comeup: { 
@@ -71,8 +71,7 @@ export const timingProfiles = {
       return this.onset.duration + 
              this.comeup.duration + 
              this.peak.duration + 
-             this.offset.duration +
-             (this.afterglow?.duration || 0);
+             this.offset.duration;
     },
     safetyInfo: {
       general: "Highly addictive. Do not mix with other depressants.",
@@ -111,8 +110,7 @@ export const timingProfiles = {
       return this.onset.duration + 
              this.comeup.duration + 
              this.peak.duration + 
-             this.offset.duration +
-             (this.afterglow?.duration || 0);
+             this.offset.duration;
     },
     safetyInfo: {
       general: "Long-acting benzo. Avoid alcohol and other depressants.",
@@ -152,8 +150,7 @@ export const timingProfiles = {
       return this.onset.duration + 
              this.comeup.duration + 
              this.peak.duration + 
-             this.offset.duration +
-             (this.afterglow?.duration || 0);
+             this.offset.duration;
     },
     safetyInfo: {
       general: "Wait 6-8 weeks between uses. Test your substances.",
@@ -193,8 +190,7 @@ export const timingProfiles = {
       return this.onset.duration + 
              this.comeup.duration + 
              this.peak.duration + 
-             this.offset.duration +
-             (this.afterglow?.duration || 0);
+             this.offset.duration;
     },
     safetyInfo: {
       general: "High addiction potential. Monitor heart.",
@@ -234,8 +230,7 @@ export const timingProfiles = {
       return this.onset.duration + 
              this.comeup.duration + 
              this.peak.duration + 
-             this.offset.duration +
-             (this.afterglow?.duration || 0);
+             this.offset.duration;
     },
     safetyInfo: {
       general: "Monitor heart rate and temperature",
@@ -275,8 +270,7 @@ export const timingProfiles = {
       return this.onset.duration + 
              this.comeup.duration + 
              this.peak.duration + 
-             this.offset.duration +
-             (this.afterglow?.duration || 0);
+             this.offset.duration;
     },
     safetyInfo: {
       general: "Follow prescribed dosing schedule",
@@ -317,8 +311,7 @@ export const timingProfiles = {
       return this.onset.duration + 
              this.comeup.duration + 
              this.peak.duration + 
-             this.offset.duration +
-             (this.afterglow?.duration || 0);
+             this.offset.duration;
     },
     safetyInfo: {
       general: "Use in safe setting with sitter",
@@ -359,8 +352,7 @@ export const timingProfiles = {
       return this.onset.duration + 
              this.comeup.duration + 
              this.peak.duration + 
-             this.offset.duration +
-             (this.afterglow?.duration || 0);
+             this.offset.duration;
     },
     safetyInfo: {
       general: "Monitor effects carefully",
@@ -402,8 +394,7 @@ export const categoryProfiles = {
       return this.onset.duration + 
              this.comeup.duration + 
              this.peak.duration + 
-             this.offset.duration +
-             (this.afterglow?.duration || 0);
+             this.offset.duration;
     },
     safetyInfo: {
       general: "Do not mix with alcohol or opioids",
@@ -442,8 +433,7 @@ export const categoryProfiles = {
       return this.onset.duration + 
              this.comeup.duration + 
              this.peak.duration + 
-             this.offset.duration +
-             (this.afterglow?.duration || 0);
+             this.offset.duration;
     },
     safetyInfo: {
       general: "Monitor heart rate and temperature",
@@ -482,8 +472,7 @@ export const categoryProfiles = {
       return this.onset.duration + 
              this.comeup.duration + 
              this.peak.duration + 
-             this.offset.duration +
-             (this.afterglow?.duration || 0);
+             this.offset.duration;
     },
     safetyInfo: {
       general: "Have naloxone available. Never use alone.",

@@ -1,6 +1,6 @@
 import React from 'react';
 import { AlertTriangle, Clock } from 'lucide-react';
-import MobileModal from '../layout/MobileModal';
+import MobileModal from './MobileModal';
 
 const OverrideModal = ({
   isOpen,

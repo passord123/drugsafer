@@ -34,8 +34,13 @@ export const checkDoseSafety = (drug, proposedDoseTime) => {
   const minutesSinceLastDose = (proposed - lastDose) / (1000 * 60);
   const hoursSinceLastDose = minutesSinceLastDose / 60;
 
+  // Calculate offset phase start time (when onset + comeup + peak phases are complete)
+  const offsetPhaseStart = timing.profile.onset.duration + 
+                          timing.profile.comeup.duration + 
+                          timing.profile.peak.duration;
+
   // Check if in offset phase
-  const inOffsetPhase = minutesSinceLastDose >= timing.offsetPhaseStart;
+  const inOffsetPhase = minutesSinceLastDose >= offsetPhaseStart;
 
   // Check daily dose limit
   const today = proposed.toDateString();
@@ -46,15 +51,12 @@ export const checkDoseSafety = (drug, proposedDoseTime) => {
   const maxDailyDoses = drug.settings?.maxDailyDoses || timing.maxDailyDoses;
   const quotaExceeded = dosesToday >= maxDailyDoses;
 
-  // Check minimum time between doses - allow during offset phase
-  const minTime = drug.settings?.useRecommendedTiming 
-    ? timing.minTimeBetweenDoses 
-    : drug.settings?.minTimeBetweenDoses;
-  const tooSoon = !inOffsetPhase && hoursSinceLastDose < minTime;
+  // Allow dosing during offset phase by considering it safe
+  const tooSoon = !inOffsetPhase && hoursSinceLastDose < timing.minTimeBetweenDoses;
 
   return {
     safe: (!tooSoon || inOffsetPhase) && !quotaExceeded,
-    remainingTime: Math.max(0, minTime - hoursSinceLastDose),
+    remainingTime: Math.max(0, timing.minTimeBetweenDoses - hoursSinceLastDose),
     quotaExceeded,
     dosesToday,
     maxDailyDoses,
@@ -62,7 +64,7 @@ export const checkDoseSafety = (drug, proposedDoseTime) => {
     timeSinceLastDose: hoursSinceLastDose,
     inOffsetPhase,
     reason: tooSoon 
-      ? `Wait at least ${minTime} hours between doses` 
+      ? `Wait for offset phase or ${timing.minTimeBetweenDoses} hours between doses` 
       : quotaExceeded 
         ? `Maximum ${maxDailyDoses} doses per day exceeded`
         : null
@@ -89,6 +91,11 @@ export const formatDuration = (minutes) => {
 
 export const getSafetyMessage = (drug, phase) => {
   const { profile } = getDrugTiming(drug);
+  
+  if (phase === 'offset') {
+    return "Redosing possible but use caution. Monitor effects carefully.";
+  }
+  
   return profile.safetyInfo?.[phase] || 
          "Monitor effects carefully and wait appropriate time between doses.";
 };

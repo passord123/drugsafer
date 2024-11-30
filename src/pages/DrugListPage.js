@@ -1,16 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Plus } from 'lucide-react';
+import { Search, Plus, Trash2, Clock, Pill, Timer, AlertTriangle, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import DrugList from '../components/DrugList';
 import DrugTracker from '../components/DrugTracker';
 import InteractionChecker from '../components/tracking/InteractionChecker';
 import ScrollIntoView from '../components/ScrollIntoView';
 import { timingProfiles, categoryProfiles } from '../components/DrugTimer/timingProfiles';
+import { useAlerts } from '../contexts/AlertContext';
 
 const DrugListPage = () => {
   const [selectedDrug, setSelectedDrug] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [drugs, setDrugs] = useState([]);
+  const { addAlert } = useAlerts();
 
   // Helper function to get total duration in minutes
   const getDrugTiming = (drugName, category) => {
@@ -21,13 +23,14 @@ const DrugListPage = () => {
     return profile.total();
   };
 
+  // Load drugs from localStorage
   useEffect(() => {
     const loadDrugs = () => {
       const savedDrugs = localStorage.getItem('drugs');
       if (savedDrugs) {
         const parsedDrugs = JSON.parse(savedDrugs);
         
-        // Update each drug's minTimeBetweenDoses based on timing profile's total duration
+        // Update each drug's minTimeBetweenDoses based on timing profile
         const updatedDrugs = parsedDrugs.map(drug => {
           const totalMinutes = getDrugTiming(drug.name, drug.category);
           
@@ -50,6 +53,7 @@ const DrugListPage = () => {
     return () => window.removeEventListener('storage', loadDrugs);
   }, []);
 
+  // Update selected drug when drugs change
   useEffect(() => {
     if (selectedDrug) {
       const updatedSelectedDrug = drugs.find(drug => drug.id === selectedDrug.id);
@@ -57,15 +61,19 @@ const DrugListPage = () => {
     }
   }, [drugs, selectedDrug]);
 
+  // Handle drug deletion
   const handleDelete = (id) => {
+    const drugToDelete = drugs.find(drug => drug.id === id);
     const updatedDrugs = drugs.filter(drug => drug.id !== id);
     setDrugs(updatedDrugs);
     localStorage.setItem('drugs', JSON.stringify(updatedDrugs));
     if (selectedDrug?.id === id) {
       setSelectedDrug(null);
     }
+    addAlert(`${drugToDelete.name} has been removed`, 'success');
   };
 
+  // Handle settings updates
   const handleUpdateSettings = (drugId, updatedSettings) => {
     const updatedDrugs = drugs.map(drug => {
       if (drug.id === drugId) {
@@ -75,7 +83,9 @@ const DrugListPage = () => {
           settings: {
             ...drug.settings,
             ...updatedSettings,
-            minTimeBetweenDoses: totalMinutes / 60
+            minTimeBetweenDoses: updatedSettings.useRecommendedTiming 
+              ? totalMinutes / 60 
+              : updatedSettings.minTimeBetweenDoses
           }
         };
       }
@@ -89,8 +99,10 @@ const DrugListPage = () => {
       const updatedDrug = updatedDrugs.find(d => d.id === drugId);
       setSelectedDrug(updatedDrug);
     }
+    addAlert('Settings updated successfully', 'success');
   };
 
+  // Handle dose recording
   const handleRecordDose = (drugId, updatedDrug) => {
     const updatedDrugs = drugs.map(drug =>
       drug.id === drugId ? updatedDrug : drug
@@ -102,6 +114,7 @@ const DrugListPage = () => {
     }
   };
 
+  // Filter drugs based on search
   const filteredDrugs = drugs.filter(drug =>
     drug.name?.toLowerCase().includes(searchQuery.toLowerCase() || '')
   );
@@ -120,7 +133,7 @@ const DrugListPage = () => {
     }
   };
 
-  // Pass the formatter to DrugList
+  // Enhance drugs with formatted time
   const enhancedDrugs = filteredDrugs.map(drug => ({
     ...drug,
     formattedTimeBetweenDoses: formatTimeBetweenDoses(getDrugTiming(drug.name, drug.category))
@@ -130,7 +143,7 @@ const DrugListPage = () => {
     <div className="max-w-7xl mx-auto">
       <div className="mb-8 text-center">
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">My Drug List</h1>
-        <p className="text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
+        <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
           Track your substances, monitor doses, and stay safe with timing recommendations.
           Select any drug to view detailed information and record doses.
         </p>
@@ -140,7 +153,8 @@ const DrugListPage = () => {
         <div className="flex flex-col items-center justify-center py-12">
           <Link
             to="/add"
-            className="inline-flex items-center px-8 py-4 bg-blue-500 dark:bg-blue-600 text-white rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors text-lg"
+            className="inline-flex items-center px-8 py-4 bg-blue-500 dark:bg-blue-600 text-white 
+                     rounded-lg hover:bg-blue-600 dark:hover:bg-blue-700 transition-colors text-lg"
           >
             <Plus className="w-6 h-6 mr-2" />
             Add Your First Drug
@@ -159,9 +173,9 @@ const DrugListPage = () => {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search your drugs..."
-                    className="w-full pl-10 pr-4 py-2 border dark:border-gray-700 rounded-lg
+                    className="w-full pl-10 pr-4 py-2 border dark:border-gray-600 rounded-lg
                              bg-white dark:bg-gray-700 
-                             text-gray-900 dark:text-gray-100
+                             text-gray-900 dark:text-white
                              placeholder-gray-500 dark:placeholder-gray-400
                              focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
                   />
@@ -175,8 +189,19 @@ const DrugListPage = () => {
                 selectedDrug={selectedDrug}
               />
             </div>
+
+            {/* Interaction Checker */}
+            {selectedDrug && (
+              <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                <InteractionChecker
+                  currentMedication={selectedDrug}
+                  allMedications={drugs}
+                />
+              </div>
+            )}
           </div>
   
+          {/* Drug Tracker */}
           {selectedDrug && (
             <ScrollIntoView
               active={Boolean(selectedDrug)}
@@ -193,6 +218,18 @@ const DrugListPage = () => {
           )}
         </div>
       )}
+
+      {/* Quick Add Button - Fixed on mobile */}
+      <div className="lg:hidden fixed right-4 bottom-20 z-20">
+        <Link
+          to="/add"
+          className="flex items-center justify-center w-14 h-14 bg-blue-500 dark:bg-blue-600 
+                   text-white rounded-full shadow-lg hover:bg-blue-600 dark:hover:bg-blue-700 
+                   transition-colors"
+        >
+          <Plus className="w-6 h-6" />
+        </Link>
+      </div>
     </div>
   );
 };
