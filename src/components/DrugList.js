@@ -192,7 +192,7 @@ const DrugList = ({ drugs = [], onDelete, onSelect, selectedDrug }) => {
                   <div className="flex items-center gap-3 text-sm">
                     <Timer className="w-4 h-4 text-blue-500 dark:text-blue-400" />
                     <span className={getStatusColor(status)}>
-                      Next dose: {calculateNextDose(drug)}
+                      Next safe dose: {calculateNextDose(drug)}
                     </span>
                   </div>
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AlertProvider } from './contexts/AlertContext/AlertProvider';
-import { Moon, Sun } from 'lucide-react';
+import { Moon, Sun, AlertCircleIcon } from 'lucide-react';
 import { DarkModeProvider, useDarkMode } from './contexts/DarkMode/DarkModeProvider';
 
 // Import pages
@@ -50,7 +50,7 @@ const AppLayout = ({ children }) => {
             DrugSafe - For harm reduction
           </p>
           <div className="flex items-center gap-4">
-            <DarkModeToggle />
+            <AlertCircleIcon />
             <p className="text-sm text-gray-500 dark:text-gray-400">
               Use at your own risk
             </p>

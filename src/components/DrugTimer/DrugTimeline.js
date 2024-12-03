@@ -7,7 +7,8 @@ import {
   HeartPulse,
   Shield,
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  Info
 } from 'lucide-react';
 import { timingProfiles, categoryProfiles } from './timingProfiles';
 
@@ -21,61 +22,15 @@ const DrugTimeline = ({
   const [showDetails, setShowDetails] = useState(false);
   const [showAllPhases, setShowAllPhases] = useState(false);
 
+  // Get drug profile with timing info
   const profile = timingProfiles[drugName.toLowerCase()] ||
     categoryProfiles[category] ||
     timingProfiles.default;
 
+  // Define phases
   const phases = ['onset', 'comeup', 'peak', 'offset', 'finished'];
 
-  const getNextPhase = (phase) => {
-    const currentIndex = phases.indexOf(phase);
-    return phases[currentIndex + 1] || 'finished';
-  };
-
-  const getPhaseEndTime = (phase, profile, lastDoseTime) => {
-    const lastDose = new Date(lastDoseTime);
-    let phaseEndMinutes = 0;
-
-    switch (phase) {
-      case 'onset':
-        phaseEndMinutes = profile.onset.duration;
-        break;
-      case 'comeup':
-        phaseEndMinutes = profile.onset.duration + profile.comeup.duration;
-        break;
-      case 'peak':
-        phaseEndMinutes = profile.onset.duration + profile.comeup.duration + profile.peak.duration;
-        break;
-      case 'offset':
-        phaseEndMinutes = profile.total();
-        break;
-      default:
-        return null;
-    }
-
-    return new Date(lastDose.getTime() + phaseEndMinutes * 60 * 1000);
-  };
-
-  const calculateTimeRemaining = (currentPhase, lastDoseTime, profile) => {
-    if (!lastDoseTime || currentPhase === 'finished') {
-      return { hours: 0, minutes: 0, seconds: 0 };
-    }
-
-    const now = new Date();
-    const phaseEndTime = getPhaseEndTime(currentPhase, profile, lastDoseTime);
-
-    if (!phaseEndTime || now >= phaseEndTime) {
-      return { hours: 0, minutes: 0, seconds: 0 };
-    }
-
-    const diffMs = phaseEndTime - now;
-    return {
-      hours: Math.floor(diffMs / (1000 * 60 * 60)),
-      minutes: Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60)),
-      seconds: Math.floor((diffMs % (1000 * 60)) / 1000)
-    };
-  };
-
+  // Helper functions
   const getPhaseStyles = (phase) => {
     switch (phase) {
       case 'onset':
@@ -93,19 +48,6 @@ const DrugTimeline = ({
     }
   };
 
-  const getSafetyInfo = (phase) => {
-    return profile[phase]?.safetyInfo ||
-      "Monitor effects carefully and maintain safe environment";
-  };
-
-  const formatCountdown = (time) => {
-    if (!time) return '--:--:--';
-    const hours = Math.max(0, time.hours);
-    const minutes = Math.max(0, time.minutes);
-    const seconds = Math.max(0, time.seconds);
-    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-  };
-
   const getPhaseTime = (phase) => {
     switch (phase) {
       case 'onset':
@@ -121,7 +63,56 @@ const DrugTimeline = ({
     }
   };
 
-  const remainingTime = calculateTimeRemaining(currentPhase, lastDoseTime, profile);
+  const getNextPhase = (phase) => {
+    const currentIndex = phases.indexOf(phase);
+    return phases[currentIndex + 1] || 'finished';
+  };
+
+  const getSafetyInfo = (phase) => {
+    return profile[phase]?.safetyInfo ||
+      "Monitor effects carefully and maintain safe environment";
+  };
+
+  const formatCountdown = (time) => {
+    if (!time) return '--:--:--';
+    const { hours, minutes, seconds } = time;
+    return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  };
+
+  const calculateTimeRemaining = (currentPhase, lastDoseTime, profile) => {
+    if (!lastDoseTime || currentPhase === 'finished') {
+      return { hours: 0, minutes: 0, seconds: 0 };
+    }
+
+    const now = new Date();
+    const lastDose = new Date(lastDoseTime);
+    const minutesSince = (now - lastDose) / (1000 * 60);
+
+    let phaseEndMinutes = 0;
+    switch (currentPhase) {
+      case 'onset':
+        phaseEndMinutes = profile.onset.duration;
+        break;
+      case 'comeup':
+        phaseEndMinutes = profile.onset.duration + profile.comeup.duration;
+        break;
+      case 'peak':
+        phaseEndMinutes = profile.onset.duration + profile.comeup.duration + profile.peak.duration;
+        break;
+      case 'offset':
+        phaseEndMinutes = profile.total();
+        break;
+      default:
+        return { hours: 0, minutes: 0, seconds: 0 };
+    }
+
+    const remainingMinutes = Math.max(0, phaseEndMinutes - minutesSince);
+    return {
+      hours: Math.floor(remainingMinutes / 60),
+      minutes: Math.floor(remainingMinutes % 60),
+      seconds: Math.floor((remainingMinutes % 1) * 60)
+    };
+  };
 
   if (!lastDoseTime) {
     return (
@@ -130,6 +121,8 @@ const DrugTimeline = ({
       </div>
     );
   }
+
+  const remainingTime = calculateTimeRemaining(currentPhase, lastDoseTime, profile);
 
   return (
     <div className="space-y-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4">
@@ -149,7 +142,106 @@ const DrugTimeline = ({
         </div>
       </div>
 
-      {/* Show All Phases Toggle */}
+      {/* Phase Details Button */}
+      <button
+        onClick={() => setShowDetails(!showDetails)}
+        className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 
+                 rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 
+                 transition-colors"
+      >
+        <span className="font-medium">Phase Details & Safety</span>
+        {showDetails ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+      </button>
+
+      {/* Phase Details Content */}
+      {showDetails && (
+        <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg space-y-4">
+          {/* Timing Details */}
+          <div className="space-y-2">
+            <h4 className="font-medium text-gray-900 dark:text-white">Current Phase Timing</h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Time Remaining</p>
+                <p className="text-lg font-medium text-gray-900 dark:text-white">
+                  {remainingTime.hours}h {remainingTime.minutes}m
+                </p>
+              </div>
+              <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
+                <p className="text-sm text-gray-500 dark:text-gray-400">Next Phase</p>
+                <p className="text-lg font-medium text-gray-900 dark:text-white">
+                  {getNextPhase(currentPhase)}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Phase-specific Safety Info */}
+          {profile[currentPhase]?.safetyInfo && (
+            <div className="space-y-2">
+              <h4 className="font-medium text-gray-900 dark:text-white">Phase-specific Guidance</h4>
+              <div className="flex items-start gap-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                <Info className="w-4 h-4 text-blue-500 dark:text-blue-400 mt-0.5" />
+                <p className="text-sm text-blue-700 dark:text-blue-200">
+                  {getSafetyInfo(currentPhase)}
+                </p>
+              </div>
+            </div>
+          )}
+
+
+          {/* Safety Guidelines */}
+          <div className="space-y-2">
+            <h4 className="font-medium text-gray-900 dark:text-white">Safety Guidelines</h4>
+            <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+              <li className="flex items-center gap-2">
+                <Timer className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                <span>Wait recommended time between doses</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <HeartPulse className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                <span>Monitor vital signs regularly</span>
+              </li>
+              <li className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                <span>Stay in a safe environment</span>
+              </li>
+              {currentPhase === 'peak' && (
+                <li className="flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-blue-500 dark:text-blue-400" />
+                  <span>Avoid strenuous activity during peak effects</span>
+                </li>
+              )}
+            </ul>
+          </div>
+
+          
+          {/* Additional Safety Warnings */}
+          {currentPhase !== 'finished' && (
+            <div className="space-y-2">
+              <div className="flex items-start gap-2 p-3 bg-yellow-50 dark:bg-yellow-900/20 rounded-lg">
+                <AlertTriangle className="w-4 h-4 text-yellow-500 dark:text-yellow-400 mt-0.5" />
+                <div>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-200">
+                    {profile.safetyInfo?.general || 
+                     "Monitor effects carefully and seek help if needed"}
+                  </p>
+                  {profile[currentPhase]?.vitals && (
+                    <ul className="mt-2 space-y-1 text-sm text-yellow-600 dark:text-yellow-300">
+                      {profile[currentPhase].vitals.map((vital, index) => (
+                        <li key={index} className="flex items-center gap-1">
+                          • Monitor {vital}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Phase Timeline Button */}
       <button
         onClick={() => setShowAllPhases(!showAllPhases)}
         className="w-full flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 
@@ -160,7 +252,7 @@ const DrugTimeline = ({
         {showAllPhases ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
       </button>
 
-      {/* All Phases Timeline */}
+      {/* Phase Timeline Content */}
       {showAllPhases && (
         <div className="space-y-3">
           {phases.map((phase) => (
@@ -184,59 +276,6 @@ const DrugTimeline = ({
               </div>
             </div>
           ))}
-        </div>
-      )}
-
-      {/* Expandable Details Section */}
-      <button
-        onClick={() => setShowDetails(!showDetails)}
-        className="w-full mt-4 flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 
-                   rounded-lg text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-600 
-                   transition-colors"
-      >
-        <span className="font-medium">Phase Details</span>
-        {showDetails ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-      </button>
-
-      {showDetails && (
-        <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg space-y-4">
-          {/* Timing Details */}
-          <div className="space-y-2">
-            <h4 className="font-medium text-gray-900 dark:text-white">Current Phase Timing</h4>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Time Remaining</p>
-                <p className="text-lg font-medium text-gray-900 dark:text-white">
-                  {remainingTime.hours}h {remainingTime.minutes}m
-                </p>
-              </div>
-              <div className="p-3 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
-                <p className="text-sm text-gray-500 dark:text-gray-400">Next Phase</p>
-                <p className="text-lg font-medium text-gray-900 dark:text-white">
-                  {getNextPhase(currentPhase)}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Safety Guidelines */}
-          <div className="space-y-2">
-            <h4 className="font-medium text-gray-900 dark:text-white">Safety Guidelines</h4>
-            <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-              <li className="flex items-center gap-2">
-                <Timer className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-                <span>Wait recommended time between doses, wait atleast untill offset</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <HeartPulse className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-                <span>Monitor vital signs regularly</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Shield className="w-4 h-4 text-blue-500 dark:text-blue-400" />
-                <span>Stay in a safe environment</span>
-              </li>
-            </ul>
-          </div>
         </div>
       )}
     </div>
