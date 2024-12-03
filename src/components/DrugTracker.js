@@ -24,7 +24,6 @@ import OverrideModal from './modals/OverrideModal';
 import RecordDoseModal from './modals/RecordDoseModal';
 import SettingsModal from './modals/SettingsModal';
 import DrugTimeline from './DrugTimer/DrugTimeline';
-import MobileDrugTracker from './MobileDrugTracker';
 
 const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
   // Core state
@@ -290,19 +289,6 @@ const DrugTracker = ({ drug, onRecordDose, onUpdateSettings }) => {
 
   return (
     <div className="space-y-6 p-6 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-      <div className="lg:hidden">
-        <MobileDrugTracker
-          drug={drug}
-          lastDoseTime={drug.doses?.[0]?.timestamp}
-          currentPhase={currentPhase}
-          timeToNextPhase={timeToNextPhase}
-          onRecordDose={() => setShowDoseModal(true)}
-          onOpenHistory={() => setShowHistory(true)}
-          onOpenSettings={() => setShowSettings(true)}
-        />
-      </div>
-
-
       <DrugTrackerHeader
         drug={drug}
         onOpenHistory={() => setShowHistory(true)}
