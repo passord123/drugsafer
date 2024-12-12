@@ -39,8 +39,6 @@ const InteractionChecker = ({ currentMedication, allMedications }) => {
     return allMedications
       .filter(med => med.id !== currentMedication.id)
       .map(med => {
-        // Here you would implement actual drug interaction logic
-        // This is a simplified example
         let severity;
         if (currentMedication.category === 'Benzodiazepiner' && 
             (med.category === 'Opioider' || med.category === 'Benzodiazepiner')) {

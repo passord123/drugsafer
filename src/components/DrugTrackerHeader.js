@@ -11,7 +11,6 @@ const DrugTrackerHeader = ({
   currentPhase,
   timeRemaining,
 }) => {
-  // All helper functions remain the same...
   const getProfile = (drugName, category) => {
     return timingProfiles[drugName.toLowerCase()] || 
            categoryProfiles[category] || 
